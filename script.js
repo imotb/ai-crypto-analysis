@@ -951,7 +951,7 @@ displayLiveChart(cryptoInfo) {
     // استفاده از TradingView widget برای نمودار زنده
     liveChartContainer.innerHTML = `
         <iframe 
-            src="https://www.tradingview.com/widgetembed/?frameElementId=tradingview_widget&symbol=${cryptoInfo.tradingViewSymbol}&interval=60&hidesidetoolbar=1&hidetoptoolbar=1&symboledit=1&saveimage=1&toolbarbg=F1F3F6&studies=[]&hideideas=1&theme=light&style=1&timezone=Etc/UTC&studies_overrides={}&overrides={}&enabled_features=[]&disabled_features=[]&locale=${this.currentLanguage === 'fa' ? 'fa_IR' : 'en'}&utm_source=&utm_medium=widget&utm_campaign=chart&utm_term=${cryptoInfo.tradingViewSymbol}"
+            src="https://www.tradingview.com/widgetembed/?frameElementId=tradingview_widget&symbol=${cryptoInfo.tradingViewSymbol}&interval=240&hidesidetoolbar=1&hidetoptoolbar=1&symboledit=1&saveimage=1&toolbarbg=F1F3F6&studies=[]&hideideas=1&theme=dark&style=2&timezone=Etc/UTC&studies_overrides={}&overrides={}&enabled_features=[]&disabled_features=[]&locale=${this.currentLanguage === 'fa' ? 'fa_IR' : 'en'}&utm_source=&utm_medium=widget&utm_campaign=chart&utm_term=${cryptoInfo.tradingViewSymbol}"
             frameborder="0"
             allowtransparency="true"
             scrolling="no"
@@ -1201,4 +1201,5 @@ getGeneralAnalysis(cryptoData) {
 document.addEventListener('DOMContentLoaded', () => {
     new CryptoAnalyzer();
 });
+
 
