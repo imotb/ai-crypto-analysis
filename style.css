@@ -637,7 +637,7 @@ body[dir="ltr"] .full-analysis-card {
     }
     
     .radio-group {
-        flex-direction: column;
+        /**flex-direction: column;**/
         gap: 10px;
     }
     
@@ -920,4 +920,5 @@ body[dir="rtl"] .footer-github a {
 
 body[dir="rtl"] .alterday-text {
     direction: ltr;
+
 }
