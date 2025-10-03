@@ -342,7 +342,7 @@ class CryptoAnalyzer {
             dogecoin: { symbol: 'DOGE', name: this.currentLanguage === 'fa' ? 'دوج کوین' : 'Dogecoin', coingeckoId: 'dogecoin', tradingViewSymbol: 'BINANCE:DOGEUSDT' },
             tron: { symbol: 'TRX', name: this.currentLanguage === 'fa' ? 'ترون' : 'Tron', coingeckoId: 'tron', tradingViewSymbol: 'BINANCE:TRXUSDT' },
             polkadot: { symbol: 'DOT', name: this.currentLanguage === 'fa' ? 'پولکادات' : 'Polkadot', coingeckoId: 'polkadot', tradingViewSymbol: 'BINANCE:DOTUSDT' },
-            polygon: { symbol: 'MATIC', name: this.currentLanguage === 'fa' ? 'پالیگان' : 'Polygon', coingeckoId: 'matic-network', tradingViewSymbol: 'BINANCE:MATICUSDT' },
+            polygon: { symbol: 'MATIC', name: this.currentLanguage === 'fa' ? 'پالیگان' : 'Polygon', coingeckoId: 'matic-network', tradingViewSymbol: 'BINANCE:POLUSDT' },
             litecoin: { symbol: 'LTC', name: this.currentLanguage === 'fa' ? 'لایت کوین' : 'Litecoin', coingeckoId: 'litecoin', tradingViewSymbol: 'BINANCE:LTCUSDT' },
             chainlink: { symbol: 'LINK', name: this.currentLanguage === 'fa' ? 'چین لینک' : 'Chainlink', coingeckoId: 'chainlink', tradingViewSymbol: 'BINANCE:LINKUSDT' },
             'bitcoin-cash': { symbol: 'BCH', name: this.currentLanguage === 'fa' ? 'بیت کوین کش' : 'Bitcoin Cash', coingeckoId: 'bitcoin-cash', tradingViewSymbol: 'BINANCE:BCHUSDT' },
@@ -1201,6 +1201,7 @@ getGeneralAnalysis(cryptoData) {
 document.addEventListener('DOMContentLoaded', () => {
     new CryptoAnalyzer();
 });
+
 
 
 
