@@ -26,7 +26,7 @@ class CryptoAnalyzer {
         return {
             'fa': {
                 'title': 'تحلیل هوشمند ارزهای دیجیتال',
-                'subtitle': 'تحلیل هوشمندانه ارزهای دیجیتال با قدرت هوش مصنوعی',
+                'subtitle': 'تحلیل ارزهای دیجیتال با قدرت هوش مصنوعی',
                 'settings': 'تنظیمات تحلیل',
                 'apiKeyLabel': 'کلید API OpenRouter:',
                 'apiKeyPlaceholder': 'کلید API خود را وارد کنید',
@@ -1201,5 +1201,6 @@ getGeneralAnalysis(cryptoData) {
 document.addEventListener('DOMContentLoaded', () => {
     new CryptoAnalyzer();
 });
+
 
 
