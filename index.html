@@ -3,7 +3,8 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>تحلیل هوشمند ارزهای دیجیتال | Crypto Analysis Assistant</title>
+    <title>Crypto Analysis Assistant</title>
+    <link rel="icon" type="image/x-icon" href="icons\fav.ico">
     <link rel="stylesheet" href="style.css">
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
     <link href="https://cdn.jsdelivr.net/gh/rastikerdar/vazirmatn@v33.003/Vazirmatn-font-face.css" rel="stylesheet">
@@ -12,12 +13,19 @@
     <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
     <link href="https://cdnjs.cloudflare.com/ajax/libs/select2/4.0.13/css/select2.min.css" rel="stylesheet" />
     <script src="https://cdnjs.cloudflare.com/ajax/libs/select2/4.0.13/js/select2.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
 </head>
 <body>
     <div class="container">
         <header class="header">
             <div class="header-top">
-                <h1><i class="fas fa-chart-line"></i> <span data-translate="title">تحلیل هوشمند ارزهای دیجیتال</span></h1>
+                <h1>
+                    <i class="fas fa-chart-line"></i>
+                    <span data-translate="title">
+                        تحلیل هوشمند ارزهای دیجیتال
+                    </span><sub>V2</sub>
+                </h1>
                 <div class="language-switcher">
                     <button id="langToggle" class="lang-btn">
                         <i class="fas fa-globe"></i>
@@ -53,31 +61,34 @@
                 <div class="form-group">
                     <label for="model" data-translate="modelLabel">مدل هوش مصنوعی:</label>
                     <select id="model">
+                        <option value="google/gemini-2.0-flash-exp:free" data-icon="icons\ai\gemini.png">Gemini2.0-Flash (free)</option>
+                        <option value="xiaomi/mimo-v2-flash:free" data-icon="icons\ai\Xiaomi.png">Xiaomi-MiMo-V2-Flash (free)</option>
+                        <option value="mistralai/devstral-2512:free" data-icon="icons\ai\mistral.png">Mistral-Devstral-2-2512 (free)</option>
+                        <option value="qwen/qwen3-coder:free" data-icon="icons\ai\qwen.png">Qwen3-Coder-480B-A35B (free)</option>
+                        <option value="nvidia/nemotron-3-nano-30b-a3b:free" data-icon="icons\ai\nvidia.png">NVIDIA-Nemotron3-30B (free)</option>
+                        <option value="tngtech/deepseek-r1t2-chimera:free" data-icon="icons\ai\deepseek.png">DeepSeek-R1T2-Chimera (free)</option>
+                        <option value="deepseek/deepseek-r1-0528:free" data-icon="icons\ai\deepseek.png">DeepSeek-R1-0528 (free) (free)</option>
+                        <option value="nex-agi/deepseek-v3.1-nex-n1:free" data-icon="icons\ai\NexAGI.png">Nex-AGI-DeepSeekV3.1 (free)</option>
+                        <option value="kwaipilot/kat-coder-pro:free" data-icon="icons\ai\kwaipilot.png">Kwaipilot-KatCoder (free)</option>
+                        <option value="arcee-ai/trinity-mini:free" data-icon="icons\ai\ArceeAI.png">ArceeAI-Trinity-Mini (free)</option>
+                        <option value="openai/gpt-oss-120b:free" data-icon="icons\ai\openai.png">GPT-OSS-120B (free)</option>
                         <option value="openai/gpt-oss-20b:free" data-icon="icons\ai\openai.png">GPT-OSS-20B (free)</option>
                         <option value="z-ai/glm-4.5-air:free" data-icon="icons\ai\zai.png">GLM-4.5-Air (free)</option>
-                        <option value="google/gemini-2.0-flash-exp:free" data-icon="icons\ai\gemini.png">Gemini2.0-Flash (free)</option>
                         <option value="google/gemma-3-27b-it:free" data-icon="icons\ai\gemma.png">Gemma-3-27B-IT (free)</option>
-                        <option value="deepseek/deepseek-chat-v3.1:free" data-icon="icons\ai\deepseek.png">DeepSeek-Chat-V3.1 (free)</option>
-                        <option value="tngtech/deepseek-r1t2-chimera:free" data-icon="icons\ai\deepseek.png">DeepSeek-R1T2-Chimera (free)</option>
-                        <option value="microsoft/mai-ds-r1:free" data-icon="icons\ai\microsoft.png">Microsoft-MAI-DS-R1 (free)</option>
+                        <option value="meta-llama/llama-3.3-70b-instruct:free" data-icon="icons\ai\meta.png">Llama-3.3-70B-Instruct (free)</option>
+                        <option value="nousresearch/hermes-3-llama-3.1-405b:free" data-icon="icons\ai\deephermes.png">Hermes3-405B-Instruct (free)</option>
                         <option value="moonshotai/kimi-k2:free" data-icon="icons\ai\kimi.png">Kimi-K2-0711 (free)</option>
-                        <option value="moonshotai/kimi-dev-72b:free" data-icon="icons\ai\kimi.png">Kimi-dev-72B (free)</option>
-                        <option value="qwen/qwen3-coder:free" data-icon="icons\ai\qwen.png">Qwen3-Coder-480B-A35B (free)</option>
-                        <option value="qwen/qwen3-235b-a22b:free" data-icon="icons\ai\qwen.png">Qwen3-235B-A22B (free)</option>
-                        <option value="cognitivecomputations/dolphin3.0-mistral-24b:free" data-icon="icons\ai\dolphin.png">Dolphin3.0-Mistral-24B (free)</option>
-                        <option value="mistralai/mistral-small-3.2-24b-instruct:free" data-icon="icons\ai\mistral.png">Mistral-Small-3.2-24B (free)</option>
-                        <option value="meituan/longcat-flash-chat:free" data-icon="icons\ai\longcat.png">LongCat-Flash-Chat (free)</option>
-                        <option value="meta-llama/llama-4-maverick:free" data-icon="icons\ai\meta.png">Llama-4-Maverick (free)</option>
-                        <option value="meta-llama/llama-4-scout:free" data-icon="icons\ai\meta.png">Llama-4-Scout (free)</option>
-                        <option value="nousresearch/deephermes-3-llama-3-8b-preview:free" data-icon="icons\ai\deephermes.png">DeepHermes3-Llama3-8B (free)</option>
-                        <option value="nvidia/nemotron-nano-9b-v2:free" data-icon="icons\ai\nvidia.png">NVIDIA-Nemotron-9B EN (free)</option>
+                        <option value="mistralai/mistral-small-3.1-24b-instruct:free" data-icon="icons\ai\mistral.png">Mistral-Small-3.1-24B (free)</option>
+                        <option value="allenai/olmo-3.1-32b-think:free" data-icon="icons\ai\AllenAI.png">AllenAI-Olmo3.1-32B-Think (free)</option>
+                        <option value="nvidia/nemotron-nano-12b-v2-vl:free" data-icon="icons\ai\nvidia.png">NVIDIA-Nemotron-12B (free)</option>
                         <option value="cognitivecomputations/dolphin-mistral-24b-venice-edition:free" data-icon="icons\ai\venice.png">Venice-Uncensored EN (free)</option>
-                        <option value="agentica-org/deepcoder-14b-preview:free" data-icon="icons\ai\agentica.png">Agentica-14B EN (free)</option>
-                        <option value="openai/gpt-5" data-icon="icons\ai\openai.png">OpenAI-GPT-5 (Credits)💰</option>
-                        <option value="x-ai/grok-4" data-icon="icons\ai\grok.png">xAI-Grok-4 (Credits)💰</option>
-                        <option value="z-ai/glm-4.6" data-icon="icons\ai\zai.png">Z.AI-GLM 4.6 (Credits)💰</option>
-                        <option value="qwen/qwen3-max" data-icon="icons\ai\qwen.png">Qwen3-Max (Credits)💰</option>
-                        <option value="google/gemini-2.5-pro" data-icon="icons\ai\gemini.png">Gemini-2.5-Pro (Credits)💰</option>
+                        <option value="openai/gpt-5.2" data-icon="icons\ai\openai.png">OpenAI-GPT-5.2 (Credits)💰</option>
+                        <option value="google/gemini-3-flash-preview" data-icon="icons\ai\gemini.png">Gemini-3-Flash (Credits)💰</option>
+                        <option value="x-ai/grok-4.1-fast" data-icon="icons\ai\grok.png">xAI-Grok4.1-Fast (Credits)💰</option>
+                        <option value="minimax/minimax-m2.1" data-icon="icons\ai\minimax.png">MiniMax M2.1 (Credits)💰</option>
+						<option value="deepseek/deepseek-v3.2" data-icon="icons\ai\deepseek.png">DeepSeek-V3.2 (Credits)💰</option>
+                        <option value="z-ai/glm-4.7" data-icon="icons\ai\zai.png">Z.AI-GLM 4.7 (Credits)💰</option>
+                        <option value="qwen/qwen-turbo" data-icon="icons\ai\qwen.png">Qwen-Turbo (Credits)💰</option>
                         <option value="anthropic/claude-sonnet-4.5" data-icon="icons\ai\claude.png">Claude-Sonnet-4.5 (Credits)💰</option>
                     </select>
                 </div>
@@ -146,6 +157,58 @@
                         <option value="aster-2" data-icon="icons\crypto\aster-2.png">Aster (ASTER)</option>
                         <option value="arbitrum" data-icon="icons\crypto\arbitrum.png">Arbitrum (ARB)</option>
                         <option value="pancakeswap-token" data-icon="icons\crypto\pancakeswap-token.png">PancakeSwap (CAKE)</option>
+                        <option value="bittensor" data-icon="icons\crypto\bittensor.png">Bittensor (TAO)</option>
+                        <option value="story-2" data-icon="icons\crypto\story-2.png">Story (IP)</option>
+                        <option value="binance-staked-sol" data-icon="icons\crypto\binance-staked-sol.png">Binance Staked SOL (BNSOL)</option>
+                        <option value="sky" data-icon="icons\crypto\sky.png">Sky (SKY)</option>
+                        <option value="official-trump" data-icon="icons\crypto\official-trump.png">Official Trump (TRUMP)</option>
+                        <option value="sushi" data-icon="icons\crypto\sushi.png">Sushi (SUSHI)</option>
+                        <option value="harmony" data-icon="icons\crypto\harmony.png">Harmony (ONE)</option>
+                        <option value="bonk" data-icon="icons\crypto\bonk.png">Bonk (BONK)</option>
+                        <option value="neo" data-icon="icons\crypto\neo.png">NEO (NEO)</option>
+                        <option value="plasma" data-icon="icons\crypto\plasma.png">Plasma (XPL)</option>
+                        <option value="pudgy-penguins" data-icon="icons\crypto\pudgy-penguins.png">Pudgy Penguins (PENGU)</option>
+                        <option value="jasmycoin" data-icon="icons\crypto\jasmycoin.png">JasmyCoin (JASMY)</option>
+                        <option value="cheems-token" data-icon="icons\crypto\cheems-token.png">Cheems Token (CHEEMS)</option>
+                        <option value="linea" data-icon="icons\crypto\linea.png">Linea (LINEA)</option>
+                        <option value="mitosis" data-icon="icons\crypto\mitosis.png">Mitosis (MITO)</option>
+                        <option value="pyth-network" data-icon="icons\crypto\pyth-network.png">Pyth Network (PYTH)</option>
+                        <option value="starknet" data-icon="icons\crypto\starknet.png">Starknet (STRK)</option>
+                        <option value="avantis" data-icon="icons\crypto\avantis.png">Avantis (AVNT)</option>
+                        <option value="smooth-love-potion" data-icon="icons\crypto\smooth-love-potion.png">Smooth Love Potion (SLP)</option>
+                        <option value="fasttoken" data-icon="icons\crypto\fasttoken.png">Fasttoken (FTN)</option>
+                        <option value="dash" data-icon="icons\crypto\dash.png">Dash (DASH)</option>
+                        <option value="reserve-rights-token" data-icon="icons\crypto\reserve-rights-token.png">Reserve Rights (RSR)</option>
+                        <option value="digibyte" data-icon="icons\crypto\digibyte.png">DigiByte (DGB)</option>
+                        <option value="audius" data-icon="icons\crypto\audius.png">Audius (AUDIO)</option>
+                        <option value="x-empire" data-icon="icons\crypto\x-empire.png">X Empire (X)</option>
+                        <option value="kava" data-icon="icons\crypto\kava.png">Kava (KAVA)</option>
+                        <option value="stepn" data-icon="icons\crypto\stepn.png">Stepn (GMT)</option>
+                        <option value="dogwifcoin" data-icon="icons\crypto\dogwifcoin.png">dogwifhat (WIF)</option>
+                        <option value="sei-network" data-icon="icons\crypto\sei-network.png">Sei (SEI)</option>
+                        <option value="syrup" data-icon="icons\crypto\syrup.png">Syrup (SYRUP)</option>
+                        <option value="altlayer" data-icon="icons\crypto\altlayer.png">AltLayer (ALT)</option>
+                        <option value="mantle" data-icon="icons\crypto\mantle.png">Mantle (MNT)</option>
+                        <option value="kaspa" data-icon="icons\crypto\kaspa.png">Kaspa (KAS)</option>
+                        <option value="flare-networks" data-icon="icons\crypto\flare-networks.png">Flare (FLR)</option>
+                        <option value="gatechain-token" data-icon="icons\crypto\gatechain-token.png">Gate (GT)</option>
+                        <option value="sun-token" data-icon="icons\crypto\sun-token.png">Sun Token (SUN)</option>
+                        <option value="gas" data-icon="icons\crypto\gas.png">Gas (GAS)</option>
+                        <option value="helium" data-icon="icons\crypto\helium.png">Helium (HNT)</option>
+                        <option value="coredaoorg" data-icon="icons\crypto\coredaoorg.png">Core (CORE)</option>
+                        <option value="mocaverse" data-icon="icons\crypto\mocaverse.png">Moca Network (MOCA)</option>
+                        <option value="alphabet-xstock" data-icon="icons\crypto\alphabet-xstock.png">Alphabet xStock (GOOGLX)</option>
+                        <option value="nvidia-xstock" data-icon="icons\crypto\nvidia-xstock.png">NVIDIA xStock (NVDAX)</option>
+                        <option value="apple-xstock" data-icon="icons\crypto\apple-xstock.png">Apple xStock (AAPLX)</option>
+                        <option value="tesla-xstock" data-icon="icons\crypto\tesla-xstock.png">Tesla xStock (TSLAX)</option>
+                        <option value="circle-xstock" data-icon="icons\crypto\circle-xstock.png">Circle xStock (CRCLX)</option>
+                        <option value="microstrategy-xstock" data-icon="icons\crypto\microstrategy-xstock.png">MicroStrategy xStock (MSTRX)</option>
+                        <option value="sp500-xstock" data-icon="icons\crypto\sp500-xstock.png">SP500 xStock (SPYX)</option>
+                        <option value="meta-xstock" data-icon="icons\crypto\meta-xstock.png">Meta xStock (METAX)</option>
+                        <option value="cisco-xstock" data-icon="icons\crypto\cisco-xstock.png">Cisco xStock (CSCOX)</option>
+                        <option value="broadcom-xstock" data-icon="icons\crypto\broadcom-xstock.png">Broadcom xStock (AVGOX)</option>
+                        <option value="crowdstrike-xstock" data-icon="icons\crypto\crowdstrike-xstock.png">CrowdStrike xStock (CRWDX)</option>
+                        <option value="amazon-xstock" data-icon="icons\crypto\amazon-xstock.png">Amazon xStock (AMZNX)</option>
                     </select>
                 </div>
 
@@ -176,7 +239,7 @@
 
                 <!-- نتایج تحلیل -->
                 <div class="analysis-results" id="analysisResults" style="display: none;">
-                    <!-- اطلاعات ارز -->
+                    <!-- بخش اطلاعات ارز بهبود یافته -->
                     <div class="crypto-info-card">
                         <h3 data-translate="cryptoInfoTitle">اطلاعات ارز (لحظه‌ای)</h3>
                         <div class="crypto-info-content" id="cryptoInfoContent"></div>
@@ -194,16 +257,50 @@
                         <div class="live-chart-container" id="liveChartContainer"></div>
                     </div>
 
-                    <!-- شاخص‌های تکنیکال -->
+                    <!-- بخش اندیکاتورهای تکنیکال بهبود یافته -->
                     <div class="indicators-card">
                         <h3 data-translate="indicatorsTitle">شاخص‌های تکنیکال (محاسبه شده)</h3>
                         <div class="indicators-grid" id="indicatorsGrid"></div>
                     </div>
 
-                    <!-- سطوح حمایت و مقاومت -->
+                    <!-- بخش سطوح حمایت و مقاومت بهبود یافته -->
                     <div class="levels-card">
                         <h3 data-translate="levelsTitle">سطوح حمایت و مقاومت</h3>
                         <div class="levels-content" id="levelsContent"></div>
+                    </div>
+
+                    <!-- بخش جدید برای نمایش پروفایل حجم -->
+                    <div class="volume-profile-card">
+                        <h3 data-translate="volumeProfileTitle">پروفایل حجم</h3>
+                        <div class="volume-profile-content" id="volumeProfileContent"></div>
+                    </div>
+
+                    <!-- بخش داده‌های بلاکچین -->
+                    <div class="blockchain-card">
+                        <h3 data-translate="blockchainTitle">⛓️ داده‌های پیشرفته بلاکچین</h3>
+                        <div class="blockchain-content" id="blockchainContent">
+                            <div class="loading">
+                                <i class="fas fa-spinner fa-spin"></i>
+                                <p data-translate="loadingBlockchainText">در حال دریافت داده‌های بلاکچین...</p>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- بخش متریک‌های پیشرفته -->
+                    <div class="advanced-metrics-card">
+                        <h3 data-translate="advancedMetricsTitle">📈 متریک‌های پیشرفته شبکه</h3>
+                        <div class="advanced-metrics-content" id="advancedMetricsContent">
+                            <div class="loading">
+                                <i class="fas fa-spinner fa-spin"></i>
+                                <p data-translate="loadingMetricsText">در حال محاسبه متریک‌های پیشرفته...</p>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- بخش جدید برای نمایش سطوح فیبوناچی -->
+                    <div class="fibonacci-card">
+                        <h3 data-translate="fibonacciTitle">سطوح بازگشت فیبوناچی</h3>
+                        <div class="fibonacci-content" id="fibonacciContent"></div>
                     </div>
 
                     <!-- پیشنهاد معاملاتی -->
@@ -216,6 +313,17 @@
                     <div class="full-analysis-card">
                         <h3 data-translate="fullAnalysisTitle">تحلیل کامل هوش مصنوعی</h3>
                         <div class="full-analysis-content" id="fullAnalysisContent"></div>
+                    </div>
+
+                    <!-- بخش جدید برای نمایش اخبار ارزهای دیجیتال -->
+                    <div class="news-card">
+                        <h3 data-translate="newsTitle">📰 اخبار بازار کریپتو</h3>
+                        <div class="news-content" id="newsContent">
+                            <div class="loading">
+                                <i class="fas fa-spinner fa-spin"></i>
+                                <p data-translate="loadingNewsText">در حال دریافت آخرین اخبار...</p>
+                            </div>
+                        </div>
                     </div>
 
                     <!-- دکمه‌های عملی -->
@@ -248,5 +356,4 @@
     </footer>
     <script src="script.js"></script>
 </body>
-
 </html>

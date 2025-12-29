@@ -105,22 +105,17 @@ body[dir="ltr"] .action-buttons {
 .language-switcher {
     display: none;
 }
-/**
-@media (max-width: 768px) {
-        .language-switcher {
-        display: block;
-    }
-    
-    .language-switcher-subtitle {
-        display: none;
-        margin-top: 9px;
-    }
-    
-    .header-subtitle {
-        flex-direction: column;
-        gap: 10px;
-    }
-}**/
+
+
+h1 sub {
+    font-size: 0.5em;   /* تقریباً نصف اندازه اصلی */
+    vertical-align: sub;
+    opacity: 0.7;
+    color: #000000;
+    background-color: #00ffff;
+    border-radius: 25px;
+    padding: 5px;
+}
 
 .lang-btn {
     background: rgba(255, 255, 255, 0.2);
@@ -147,7 +142,7 @@ body[dir="ltr"] .action-buttons {
 .main-content {
     display: grid;
     grid-template-columns: 1fr 2fr;
-    gap: 30px;
+    gap: 20px;
     align-items: start;
 }
 
@@ -284,6 +279,7 @@ body[dir="ltr"] .action-buttons {
     font-size: 1.1rem;
     color: #666;
     font-weight: 500;
+    line-height: 1.6;
 }
 
 .analysis-results {
@@ -300,7 +296,7 @@ body[dir="ltr"] .action-buttons {
 .full-analysis-card {
     background: #f8f9fa;
     border-radius: 37px;
-    padding: 15px;
+    padding: 20px 15px;
     border-right: 4px solid #667eea;
     box-shadow: 0 2px 10px rgba(0,0,0,0.05);
 }
@@ -411,7 +407,7 @@ body[dir="ltr"] .full-analysis-card {
 }
 
 .indicator-item .value {
-    font-size: 1.3rem;
+    font-size: 1.1rem;
     font-weight: 700;
 }
 
@@ -584,6 +580,144 @@ body[dir="ltr"] .full-analysis-card {
     margin-bottom: 0;
 }
 
+.error-panel {
+    background: linear-gradient(135deg, #b86bff 0%, #ee5a24 100%);
+    color: white;
+    border-radius: 15px;
+    padding: 30px;
+    margin: 20px 0;
+    text-align: center;
+    box-shadow: 0 10px 30px rgba(238, 90, 36, 0.3);
+    animation: slideIn 0.5s ease;
+}
+
+.error-panel .error-icon {
+    font-size: 4rem;
+    margin-bottom: 20px;
+    animation: pulse 2s infinite;
+}
+
+.error-panel h3 {
+    font-size: 1.5rem;
+    margin-bottom: 15px;
+    font-weight: 600;
+}
+
+.error-panel p {
+    font-size: 1.1rem;
+    margin-bottom: 25px;
+    opacity: 0.9;
+}
+
+.error-actions {
+    display: flex;
+    gap: 15px;
+    justify-content: center;
+    flex-wrap: wrap;
+    margin-top: 20px;
+}
+
+.error-actions .retry-btn,
+.error-actions .close-btn {
+    padding: 12px 24px;
+    border: none;
+    border-radius: 25px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    font-family: inherit;
+}
+
+.error-actions .retry-btn {
+    background: white;
+    color: #ee5a24;
+}
+
+.error-actions .retry-btn:hover {
+    background: #f8f9fa;
+    transform: translateY(-2px);
+    box-shadow: 0 5px 15px rgba(0,0,0,0.2);
+}
+
+.error-actions .close-btn {
+    background: rgba(255, 255, 255, 0.2);
+    color: white;
+    border: 2px solid rgba(255, 255, 255, 0.5);
+}
+
+.error-actions .close-btn:hover {
+    background: rgba(255, 255, 255, 0.3);
+    transform: translateY(-2px);
+}
+
+.error-tips {
+    margin-top: 25px;
+    text-align: right;
+    background: rgba(255, 255, 255, 0.1);
+    padding: 20px;
+    border-radius: 10px;
+}
+
+.error-tips h4 {
+    margin-bottom: 15px;
+    font-size: 1.1rem;
+}
+
+.error-tips ul {
+    list-style: none;
+    padding: 0;
+}
+
+.error-tips li {
+    margin-bottom: 8px;
+    padding-right: 20px;
+    position: relative;
+}
+
+.error-tips li::before {
+    content: "•";
+    position: absolute;
+    right: 0;
+    color: rgba(255, 255, 255, 0.8);
+    font-size: 1.2rem;
+}
+
+@keyframes slideIn {
+    from {
+        opacity: 0;
+        transform: translateY(-20px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+@keyframes pulse {
+    0% { transform: scale(1); }
+    50% { transform: scale(1.1); }
+    100% { transform: scale(1); }
+}
+
+/* پشتیبانی از RTL */
+body[dir="rtl"] .error-tips {
+    text-align: right;
+}
+
+body[dir="ltr"] .error-tips {
+    text-align: left;
+}
+
+body[dir="ltr"] .error-tips li {
+    padding-left: 20px;
+    padding-right: 0;
+}
+
+body[dir="ltr"] .error-tips li::before {
+    left: 0;
+    right: auto;
+}
+
 /* بهبود ریسپانسیو */
 @media (max-width: 768px) {
     .main-content {
@@ -653,6 +787,993 @@ body[dir="ltr"] .full-analysis-card {
     }
 }
 
+/* استایل برای سطوح حمایت و مقاومت جدید */
+.level-item {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 12px 0;
+    border-bottom: 1px solid #eee;
+    font-size: 0.95rem;
+    position: relative;
+}
+
+.level-item:last-child {
+    border-bottom: none;
+}
+
+.level-item.orderblock {
+    background-color: rgba(255, 193, 7, 0.1);
+    border-radius: 6px;
+    padding: 12px;
+    margin-bottom: 8px;
+}
+
+.level-name {
+    color: #666;
+    font-weight: 500;
+}
+
+.level-value {
+    font-weight: 600;
+    color: #333;
+}
+
+.level-strength {
+    font-size: 0.85rem;
+    padding: 2px 6px;
+    border-radius: 4px;
+    background-color: #67f9ea4a;
+    color: #666;
+}
+
+.level-type {
+    font-size: 0.8rem;
+    padding: 2px 6px;
+    border-radius: 4px;
+    background-color: #ffc107;
+    color: #333;
+    font-weight: 600;
+}
+
+/* استایل برای اندیکاتورهای جدید */
+.indicator-item .value.overbought {
+    color: #dc3545;
+}
+
+.indicator-item .value.oversold {
+    color: #28a745;
+}
+
+.indicator-item .value.strong {
+    color: #28a745;
+}
+
+.indicator-item .value.moderate {
+    color: #ffc107;
+}
+
+.indicator-item .value.weak {
+    color: #dc3545;
+}
+
+/* استایل برای نمایش بهتر اندیکاتورها در موبایل */
+@media (max-width: 768px) {
+    .indicators-grid {
+        grid-template-columns: repeat(2, 1fr);
+    }
+    
+    .level-item {
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 5px;
+    }
+    
+    .level-strength, .level-type {
+        align-self: flex-end;
+    }
+}
+
+/* استایل برای بخش پروفایل حجم */
+.volume-profile-card {
+    background: #f8f9fa;
+    border-radius: 37px;
+    padding: 15px;
+    border-right: 4px solid #667eea;
+    box-shadow: 0 2px 10px rgba(0,0,0,0.05);
+}
+
+body[dir="ltr"] .volume-profile-card {
+    border-right: none;
+    border-left: 4px solid #667eea;
+}
+
+.volume-profile-card h3 {
+    color: #333;
+    margin-bottom: 20px;
+    font-size: 1.2rem;
+    font-weight: 600;
+}
+
+.volume-profile-summary {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+    gap: 15px;
+    margin-bottom: 20px;
+}
+
+.volume-level-item {
+    background: white;
+    padding: 15px;
+    border-radius: 8px;
+    text-align: center;
+    box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+}
+
+.volume-level-item .level-label {
+    font-size: 0.9rem;
+    color: #2a4ed5;
+    margin-bottom: 5px;
+}
+
+.volume-level-item .level-value {
+    font-size: 1.2rem;
+    font-weight: 600;
+    color: #333;
+    margin-bottom: 5px;
+}
+
+.volume-level-item .level-description {
+    font-size: 0.8rem;
+    color: #888;
+}
+
+.volume-profile-chart {
+    background: white;
+    padding: 20px;
+    border-radius: 10px;
+    margin-bottom: 20px;
+}
+
+.volume-profile-chart h4 {
+    margin-bottom: 15px;
+    color: #333;
+    font-weight: 600;
+}
+
+.volume-bars {
+    max-height: 300px;
+    overflow-y: auto;
+}
+
+.volume-bar-container {
+    display: flex;
+    align-items: center;
+    margin-bottom: 8px;
+    padding: 5px 0;
+}
+
+.volume-bar {
+    height: 20px;
+    background: linear-gradient(90deg, #667eea, #764ba2);
+    border-radius: 3px;
+    margin-right: 10px;
+    transition: all 0.3s ease;
+}
+
+.volume-bar:hover {
+    opacity: 0.8;
+}
+
+.volume-bar.poc-bar {
+    background: linear-gradient(90deg, #28a745, #20c997);
+}
+
+.volume-bar.va-bar {
+    background: linear-gradient(90deg, #ffc107, #fd7e14);
+}
+
+.volume-bar-label {
+    min-width: 100px;
+    font-size: 0.9rem;
+    color: #333;
+    font-weight: 500;
+}
+
+.volume-bar-value {
+    min-width: 80px;
+    font-size: 0.85rem;
+    color: #666;
+    text-align: left;
+}
+
+.volume-profile-analysis {
+    background: white;
+    padding: 20px;
+    border-radius: 10px;
+}
+
+.volume-profile-analysis h4 {
+    margin-bottom: 15px;
+    color: #333;
+    font-weight: 600;
+}
+
+.volume-profile-analysis p {
+    line-height: 1.6;
+    color: #333;
+}
+
+/* استایل برای بخش فیبوناچی */
+.fibonacci-card {
+    background: #f8f9fa;
+    border-radius: 37px;
+    padding: 15px;
+    border-right: 4px solid #667eea;
+    box-shadow: 0 2px 10px rgba(0,0,0,0.05);
+}
+
+body[dir="ltr"] .fibonacci-card {
+    border-right: none;
+    border-left: 4px solid #667eea;
+}
+
+.fibonacci-card h3 {
+    color: #333;
+    margin-bottom: 20px;
+    font-size: 1.2rem;
+    font-weight: 600;
+}
+
+.fibonacci-summary {
+    margin-bottom: 20px;
+}
+
+.fibonacci-range {
+    display: flex;
+    justify-content: space-between;
+    background: white;
+    padding: 15px;
+    border-radius: 10px;
+    box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+}
+
+.fib-range-item {
+    text-align: center;
+}
+
+.fib-range-item .fib-label {
+    display: block;
+    font-size: 0.9rem;
+    color: #666;
+    margin-bottom: 5px;
+}
+
+.fib-range-item .fib-value {
+    font-size: 1.1rem;
+    font-weight: 600;
+    color: #333;
+}
+
+.fibonacci-levels {
+    background: white;
+    padding: 20px;
+    border-radius: 10px;
+    margin-bottom: 20px;
+}
+
+.fibonacci-levels h4 {
+    margin-bottom: 15px;
+    color: #333;
+    font-weight: 600;
+}
+
+.fib-level {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 10px 0;
+    border-bottom: 1px solid #eee;
+}
+
+.fib-level:last-child {
+    border-bottom: none;
+}
+
+.fib-level.current-price {
+    background-color: rgba(102, 126, 234, 0.1);
+    border-radius: 6px;
+    padding: 10px;
+    margin-bottom: 8px;
+}
+
+.fib-percent {
+    font-weight: 600;
+    color: #667eea;
+    min-width: 50px;
+}
+
+.fib-price {
+    font-weight: 500;
+    color: #333;
+    flex: 1;
+    text-align: center;
+}
+
+.current-indicator {
+    font-size: 0.8rem;
+    padding: 2px 6px;
+    border-radius: 4px;
+    background-color: #667eea;
+    color: white;
+    font-weight: 600;
+}
+
+.fibonacci-analysis {
+    background: white;
+    padding: 20px;
+    border-radius: 10px;
+}
+
+.fibonacci-analysis h4 {
+    margin-bottom: 15px;
+    color: #333;
+    font-weight: 600;
+}
+
+.fibonacci-analysis p {
+    line-height: 1.6;
+    color: #333;
+}
+
+/* استایل برای حالت بدون داده */
+.no-data {
+    background: white;
+    padding: 20px;
+    border-radius: 10px;
+    text-align: center;
+    color: #666;
+}
+
+/* بهبود ریسپانسیو */
+@media (max-width: 768px) {
+    .volume-profile-summary {
+        grid-template-columns: 1fr;
+    }
+    
+    .fibonacci-range {
+        flex-direction: column;
+        gap: 10px;
+    }
+    
+    .volume-bar-container {
+        flex-wrap: wrap;
+    }
+    
+    .volume-bar-label {
+        min-width: 80px;
+        font-size: 0.8rem;
+    }
+    
+    .volume-bar-value {
+        min-width: 60px;
+        font-size: 0.8rem;
+    }
+}
+
+/* استایل‌های مربوط به هدر PDF */
+.pdf-header {
+    page-break-after: avoid;
+    margin-bottom: 20px;
+}
+
+/* استایل‌های بهینه‌سازی برای چاپ و PDF */
+@media print {
+    body {
+        background: white !important;
+        color: black !important;
+    }
+    
+    .main-content {
+        display: block !important;
+    }
+    
+    .settings-panel {
+        display: none !important;
+    }
+    
+    .results-panel {
+        box-shadow: none !important;
+        border: 1px solid #ddd !important;
+        page-break-inside: avoid;
+    }
+    
+    .action-buttons {
+        display: none !important;
+    }
+    
+    .crypto-info-card,
+    .summary-card,
+    .live-chart-card,
+    .indicators-card,
+    .levels-card,
+    .volume-profile-card,
+    .fibonacci-card,
+    .recommendation-card,
+    .full-analysis-card {
+        page-break-inside: avoid;
+        border: 1px solid #ddd !important;
+        margin-bottom: 15px !important;
+    }
+    
+    .live-chart-container {
+        height: 300px !important;
+        overflow: hidden !important;
+    }
+    
+    .indicators-grid {
+        grid-template-columns: repeat(3, 1fr) !important;
+    }
+    
+    .crypto-info-content {
+        grid-template-columns: repeat(3, 1fr) !important;
+    }
+    
+    .levels-content {
+        grid-template-columns: repeat(2, 1fr) !important;
+    }
+}
+
+/* استایل برای بهبود نمایش در حالت چاپ */
+.pdf-footer {
+    position: fixed;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    text-align: center;
+    font-size: 10px;
+    color: #888;
+    padding: 5px 0;
+}
+
+/* استایل برای بخش اخبار */
+.news-card {
+    background: #f8f9fa;
+    border-radius: 37px;
+    padding: 15px;
+    border-right: 4px solid #667eea;
+    box-shadow: 0 2px 10px rgba(0,0,0,0.05);
+    margin-bottom: 20px;
+}
+
+body[dir="ltr"] .news-card {
+    border-right: none;
+    border-left: 4px solid #2dcf52f0;
+}
+
+.news-card h3 {
+    color: #333;
+    margin-bottom: 20px;
+    font-size: 1.2rem;
+    font-weight: 600;
+}
+
+.news-content {
+    max-height: 500px;
+    overflow-y: auto;
+    padding-right: 5px;
+}
+
+/* استایل برای اسکرول بار */
+.news-content::-webkit-scrollbar {
+    width: 6px;
+}
+
+.news-content::-webkit-scrollbar-track {
+    background: #f1f1f1;
+    border-radius: 10px;
+}
+
+.news-content::-webkit-scrollbar-thumb {
+    background: #667eea;
+    border-radius: 10px;
+}
+
+.news-content::-webkit-scrollbar-thumb:hover {
+    background: #5a6fd8;
+}
+
+.news-item {
+    background: white;
+    padding: 15px;
+    border-radius: 25px;
+    margin-bottom: 15px;
+    box-shadow: 0 2px 5px rgba(0,0,0,0.2);
+    transition: all 0.3s ease;
+    border-left: 2px solid transparent;
+}
+
+.news-item:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+}
+
+.news-item.important {
+    border-left-color: #ff8b8b;
+    background: #ffe3f975;
+}
+
+.news-item:last-child {
+    margin-bottom: 0;
+}
+
+.news-title {
+    font-weight: 600;
+    color: #333;
+    margin-bottom: 8px;
+    font-size: 1rem;
+    line-height: 1.4;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.important-star {
+    color: #ffc107;
+    font-size: 0.9rem;
+}
+
+.news-source {
+    font-size: 0.85rem;
+    color: #666;
+    margin-bottom: 5px;
+    display: flex;
+    align-items: center;
+    gap: 5px;
+}
+
+.news-date {
+    font-size: 0.8rem;
+    color: #888;
+    margin-bottom: 10px;
+    display: flex;
+    align-items: center;
+    gap: 5px;
+}
+
+.news-link {
+    display: inline-flex;
+    align-items: center;
+    gap: 5px;
+    color: #667eea;
+    text-decoration: none;
+    font-weight: 500;
+    font-size: 0.9rem;
+    transition: all 0.3s ease;
+}
+
+.news-link:hover {
+    color: #5a6fd8;
+    transform: translateX(3px);
+}
+
+.news-error {
+    background: #f8d7da;
+    color: #721c24;
+    padding: 15px;
+    border-radius: 8px;
+    text-align: center;
+    margin-bottom: 15px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 10px;
+}
+
+/* بهبود ریسپانسیو برای بخش اخبار */
+@media (max-width: 768px) {
+    .news-content {
+        max-height: 400px;
+    }
+    
+    .news-item {
+        padding: 12px;
+    }
+    
+    .news-title {
+        font-size: 0.95rem;
+    }
+    
+    .news-source,
+    .news-date {
+        font-size: 0.8rem;
+    }
+    
+    .news-link {
+        font-size: 0.85rem;
+    }
+}
+
+/* استایل برای بخش داده‌های بلاکچین */
+.blockchain-card {
+    background: #f8f9fa;
+    border-radius: 37px;
+    padding: 15px;
+    border-right: 4px solid #667eea;
+    box-shadow: 0 2px 10px rgba(0,0,0,0.05);
+}
+
+body[dir="ltr"] .blockchain-card {
+    border-right: none;
+    border-left: 4px solid #667eea;
+}
+
+.blockchain-card h3 {
+    color: #333;
+    margin-bottom: 20px;
+    font-size: 1.2rem;
+    font-weight: 600;
+}
+
+.blockchain-stats-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+    gap: 15px;
+    margin-bottom: 20px;
+}
+
+.blockchain-stat-item {
+    background: white;
+    padding: 15px;
+    border-radius: 8px;
+    text-align: center;
+    box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+}
+
+.blockchain-stat-item .stat-label {
+    font-size: 0.9rem;
+    color: #666;
+    margin-bottom: 5px;
+}
+
+.blockchain-stat-item .stat-value {
+    font-size: 1.1rem;
+    font-weight: 600;
+    color: #333;
+}
+
+.mining-pools-section {
+    background: white;
+    padding: 20px;
+    border-radius: 10px;
+    margin-bottom: 20px;
+}
+
+.mining-pools-section h4 {
+    margin-bottom: 15px;
+    color: #333;
+    font-weight: 600;
+}
+
+.pools-list {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+}
+
+.pool-item {
+    display: flex;
+    align-items: center;
+    padding: 10px;
+    background: #f8f9fa;
+    border-radius: 6px;
+    transition: all 0.3s ease;
+}
+
+.pool-item:hover {
+    background: #e9ecef;
+    transform: translateX(5px);
+}
+
+.pool-rank {
+    width: 25px;
+    height: 25px;
+    background: #667eea;
+    color: white;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 0.8rem;
+    font-weight: 600;
+    margin-left: 10px;
+}
+
+body[dir="rtl"] .pool-rank {
+    margin-left: 0;
+    margin-right: 10px;
+}
+
+.pool-name {
+    flex: 1;
+    font-weight: 500;
+    color: #333;
+}
+
+.pool-value {
+    font-weight: 600;
+    color: #667eea;
+}
+
+.network-analysis {
+    background: white;
+    padding: 20px;
+    border-radius: 10px;
+}
+
+.network-analysis h4 {
+    margin-bottom: 15px;
+    color: #333;
+    font-weight: 600;
+}
+
+.network-analysis p {
+    line-height: 1.6;
+    color: #333;
+}
+
+/* استایل برای بخش متریک‌های پیشرفته */
+.advanced-metrics-card {
+    background: #f8f9fa;
+    border-radius: 37px;
+    padding: 15px;
+    border-right: 4px solid #667eea;
+    box-shadow: 0 2px 10px rgba(0,0,0,0.05);
+}
+
+body[dir="ltr"] .advanced-metrics-card {
+    border-right: none;
+    border-left: 4px solid #667eea;
+}
+
+.advanced-metrics-card h3 {
+    color: #333;
+    margin-bottom: 20px;
+    font-size: 1.2rem;
+    font-weight: 600;
+}
+
+.advanced-metrics-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+    gap: 15px;
+}
+
+.metric-item {
+    background: white;
+    padding: 20px;
+    border-radius: 10px;
+    text-align: center;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+    transition: all 0.3s ease;
+    border-left: 4px solid #ddd;
+}
+
+.metric-item.overbought {
+    border-left-color: #dc3545;
+    background: linear-gradient(135deg, #fff, #ffe6e6);
+}
+
+.metric-item.oversold {
+    border-left-color: #28a745;
+    background: linear-gradient(135deg, #fff, #e6ffe6);
+}
+
+.metric-item.neutral {
+    border-left-color: #ffc107;
+    background: linear-gradient(135deg, #fff, #fff9e6);
+}
+
+.metric-item:hover {
+    transform: translateY(-3px);
+    box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+}
+
+.metric-name {
+    font-weight: 600;
+    color: #555;
+    margin-bottom: 8px;
+    font-size: 1rem;
+}
+
+.metric-value {
+    font-size: 1.4rem;
+    font-weight: 700;
+    margin-bottom: 8px;
+}
+
+.metric-item.overbought .metric-value {
+    color: #dc3545;
+}
+
+.metric-item.oversold .metric-value {
+    color: #28a745;
+}
+
+.metric-item.neutral .metric-value {
+    color: #ffc107;
+}
+
+.metric-description {
+    font-size: 0.85rem;
+    color: #666;
+    line-height: 1.4;
+}
+
+/* بهبود ریسپانسیو */
+@media (max-width: 768px) {
+    .blockchain-stats-grid {
+        grid-template-columns: repeat(2, 1fr);
+    }
+    
+    .advanced-metrics-grid {
+        grid-template-columns: 1fr;
+    }
+    
+    .pool-item {
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 5px;
+    }
+    
+    .pool-rank {
+        align-self: flex-start;
+    }
+}
+
+@media (max-width: 480px) {
+    .blockchain-stats-grid {
+        grid-template-columns: 1fr;
+    }
+    
+    .metric-item {
+        padding: 15px;
+    }
+}
+
+/* اضافه کردن این استایل‌ها به فایل style.css */
+
+/* استایل برای سلامت شبکه */
+.network-health-indicators {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+    gap: 15px;
+    margin-bottom: 20px;
+}
+
+.health-indicator {
+    background: white;
+    padding: 15px;
+    border-radius: 10px;
+    text-align: center;
+    border-left: 4px solid #ddd;
+}
+
+.health-indicator.health-excellent {
+    border-left-color: #28a745;
+    background: linear-gradient(135deg, #fff, #e6ffe6);
+}
+
+.health-indicator.health-good {
+    border-left-color: #20c997;
+    background: linear-gradient(135deg, #fff, #e6fff9);
+}
+
+.health-indicator.health-fair {
+    border-left-color: #ffc107;
+    background: linear-gradient(135deg, #fff, #fff9e6);
+}
+
+.health-indicator.health-poor {
+    border-left-color: #dc3545;
+    background: linear-gradient(135deg, #fff, #ffe6e6);
+}
+
+.health-indicator.health-unknown {
+    border-left-color: #6c757d;
+    background: linear-gradient(135deg, #fff, #f8f9fa);
+}
+
+.indicator-label {
+    display: block;
+    font-size: 0.9rem;
+    color: #666;
+    margin-bottom: 5px;
+}
+
+.indicator-value {
+    display: block;
+    font-size: 1.1rem;
+    font-weight: 600;
+}
+
+.health-excellent .indicator-value { color: #28a745; }
+.health-good .indicator-value { color: #20c997; }
+.health-fair .indicator-value { color: #ffc107; }
+.health-poor .indicator-value { color: #dc3545; }
+.health-unknown .indicator-value { color: #6c757d; }
+
+.network-analysis-text {
+    line-height: 1.6;
+    color: #333;
+    background: #f8f9fa;
+    padding: 15px;
+    border-radius: 8px;
+    border-right: 3px solid #667eea;
+}
+
+/* بهبود استایل برای متریک‌ها */
+.metric-explanation {
+    font-size: 0.8rem;
+    color: #888;
+    margin-top: 5px;
+    line-height: 1.3;
+}
+
+.metrics-analysis {
+    background: white;
+    padding: 20px;
+    border-radius: 10px;
+    margin-top: 20px;
+}
+
+.metrics-analysis h4 {
+    margin-bottom: 15px;
+    color: #333;
+    font-weight: 600;
+}
+
+.metrics-analysis p {
+    line-height: 1.6;
+    color: #333;
+}
+
+/* استایل برای توضیحات آمار بلاکچین */
+.stat-description {
+    font-size: 0.8rem;
+    color: #666;
+    margin-top: 5px;
+}
+
+.blockchain-analysis-section {
+    background: white;
+    padding: 20px;
+    border-radius: 10px;
+    margin-top: 20px;
+}
+
+.blockchain-analysis-section h4 {
+    margin-bottom: 15px;
+    color: #333;
+    font-weight: 600;
+}
+
+/* بهبود نمایش در موبایل */
+@media (max-width: 768px) {
+    .network-health-indicators {
+        grid-template-columns: 1fr;
+    }
+    
+    .health-indicator {
+        padding: 12px;
+    }
+    
+    .network-analysis-text {
+        padding: 12px;
+        font-size: 0.9rem;
+    }
+}
+
 /* استایل‌های Select2 */
 .select2-container--default .select2-selection--single {
     height: 50px !important;
@@ -693,18 +1814,18 @@ body[dir="ltr"] .full-analysis-card {
 
 /* استایل‌های آیکون‌های ارزهای دیجیتال */
 .crypto-icon {
-    width: 30px !important;
-    height: 30px !important;
-    margin-right: 3px !important;
-    border-radius: 10% !important;
+    width: 40px !important;
+    height: 40px !important;
+    margin-right: 2px !important;
+    border-radius: 50% !important;
     vertical-align: middle !important;
 }
 
 .crypto-icon-selection {
-    width: 30px !important;
-    height: 30px !important;
-    margin-right: 3px !important;
-    border-radius: 10% !important;
+    width: 35px !important;
+    height: 35px !important;
+    margin-right: 2px !important;
+    border-radius: 50% !important;
     vertical-align: middle !important;
 }
 
@@ -748,27 +1869,27 @@ body[dir="rtl"] .select2-container--default .select2-selection--single .select2-
 body[dir="rtl"] .crypto-icon,
 body[dir="rtl"] .ai-icon {
     margin-left: 0 !important;
-    margin-right: 3px !important;
+    margin-right: 2px !important;
 }
 
 body[dir="rtl"] .crypto-icon-selection,
 body[dir="rtl"] .ai-icon-selection {
     margin-left: 0 !important;
-    margin-right: 3px !important;
+    margin-right: 2px !important;
 }
 
 /* بهبود ریسپانسیو */
 @media (max-width: 768px) {
     .crypto-icon,
     .ai-icon {
-        width: 30px !important;
-        height: 30px !important;
+        width: 35px !important;
+        height: 35px !important;
     }
     
     .crypto-icon-selection,
     .ai-icon-selection {
-        width: 30px !important;
-        height: 30px !important;
+        width: 35px !important;
+        height: 35px !important;
     }
 
     .select2-dropdown,
@@ -926,8 +2047,4 @@ body[dir="rtl"] .footer-github a {
 
 body[dir="rtl"] .alterday-text {
     direction: ltr;
-
 }
-
-
-
