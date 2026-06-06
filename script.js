@@ -17,6 +17,19 @@ class CryptoAnalyzer {
         this.cryptoInfo = {};
         this.currentLanguage = 'fa'; // زبان پیش‌فرض فارسی
         this.translations = this.getTranslations();
+        this._blockchairSlugs = {
+            'LTC': 'litecoin',
+            'BCH': 'bitcoin-cash',
+            'DOGE': 'dogecoin',
+            'DASH': 'dash',
+            'ADA': 'cardano',
+            'DOT': 'polkadot',
+            'XRP': 'ripple',
+            'EOS': 'eos',
+            'XLM': 'stellar',
+            'ZEC': 'zcash',
+            'XMR': 'monero'
+        };
         this.initializeEventListeners();
         this.applyLanguage();
     }
@@ -548,7 +561,21 @@ class CryptoAnalyzer {
         const resultsPanel = document.getElementById('resultsPanel');
         if (!resultsPanel) return;
 
-        resultsPanel.innerHTML = `
+        // Find or create the error container inside resultsPanel, preserving the heading
+        let errorContainer = document.getElementById('errorContainer');
+        if (!errorContainer) {
+            errorContainer = document.createElement('div');
+            errorContainer.id = 'errorContainer';
+            resultsPanel.appendChild(errorContainer);
+        }
+
+        // Hide analysis status if visible
+        const analysisStatus = document.getElementById('analysisStatus');
+        if (analysisStatus) analysisStatus.style.display = 'none';
+        const analysisResults = document.getElementById('analysisResults');
+        if (analysisResults) analysisResults.style.display = 'none';
+
+        errorContainer.innerHTML = `
             <div class="error-panel">
                 <div class="error-icon">
                     <i class="fas fa-exclamation-triangle"></i>
@@ -560,7 +587,7 @@ class CryptoAnalyzer {
                         <i class="fas fa-redo"></i>
                         ${this.currentLanguage === 'fa' ? 'بارگذاری مجدد صفحه' : 'Reload Page'}
                     </button>
-                    <button onclick="document.getElementById('resultsPanel').style.display = 'none'" class="close-btn">
+                    <button onclick="document.getElementById('errorContainer').remove()" class="close-btn">
                         <i class="fas fa-times"></i>
                         ${this.currentLanguage === 'fa' ? 'بستن' : 'Close'}
                     </button>
@@ -608,7 +635,7 @@ class CryptoAnalyzer {
             dogecoin: { symbol: 'DOGE', name: this.currentLanguage === 'fa' ? 'دوج کوین' : 'Dogecoin', coingeckoId: 'dogecoin', coinpaprikaId: 'doge-dogecoin', tradingViewSymbol: 'BINANCE:DOGEUSDT' },
             tron: { symbol: 'TRX', name: this.currentLanguage === 'fa' ? 'ترون' : 'Tron', coingeckoId: 'tron', coinpaprikaId: 'trx-tron', tradingViewSymbol: 'BINANCE:TRXUSDT' },
             polkadot: { symbol: 'DOT', name: this.currentLanguage === 'fa' ? 'پولکادات' : 'Polkadot', coingeckoId: 'polkadot', coinpaprikaId: 'dot-polkadot', tradingViewSymbol: 'BINANCE:DOTUSDT' },
-            polygon: { symbol: 'MATIC', name: this.currentLanguage === 'fa' ? 'پالیگان' : 'Polygon', coingeckoId: 'matic-network', coinpaprikaId: 'matic-polygon', tradingViewSymbol: 'BINANCE:POLUSDT' },
+            polygon: { symbol: 'POL', name: this.currentLanguage === 'fa' ? 'پالیگان' : 'Polygon', coingeckoId: 'matic-network', coinpaprikaId: 'matic-polygon', tradingViewSymbol: 'BINANCE:POLUSDT' },
             litecoin: { symbol: 'LTC', name: this.currentLanguage === 'fa' ? 'لایت کوین' : 'Litecoin', coingeckoId: 'litecoin', coinpaprikaId: 'ltc-litecoin', tradingViewSymbol: 'BINANCE:LTCUSDT' },
             chainlink: { symbol: 'LINK', name: this.currentLanguage === 'fa' ? 'چین لینک' : 'Chainlink', coingeckoId: 'chainlink', coinpaprikaId: 'link-chainlink', tradingViewSymbol: 'BINANCE:LINKUSDT' },
             'bitcoin-cash': { symbol: 'BCH', name: this.currentLanguage === 'fa' ? 'بیت کوین کش' : 'Bitcoin Cash', coingeckoId: 'bitcoin-cash', coinpaprikaId: 'bch-bitcoin-cash', tradingViewSymbol: 'BINANCE:BCHUSDT' },
@@ -641,7 +668,7 @@ class CryptoAnalyzer {
             electroneum: { symbol: 'ETN', name: this.currentLanguage === 'fa' ? 'الکترونیوم' : 'Electroneum', coingeckoId: 'electroneum', coinpaprikaId: 'etn-electroneum', tradingViewSymbol: 'KUCOIN:ETNUSDT' },
             'trust-wallet-token': { symbol: 'TWT', name: this.currentLanguage === 'fa' ? 'تراست ولت توکن' : 'Trust Wallet Token', coingeckoId: 'trust-wallet-token', coinpaprikaId: 'twt-trust-wallet-token', tradingViewSymbol: 'BINANCE:TWTUSDT' },
             'pepe': { symbol: 'PEPE', name: this.currentLanguage === 'fa' ? 'پپه' : 'Pepe', coingeckoId: 'pepe', coinpaprikaId: 'pepe-pepe', tradingViewSymbol: 'BINANCE:PEPEUSDT' },
-            'dogs': { symbol: 'DOGS ', name: this.currentLanguage === 'fa' ? 'داگز' : 'Dogs', coingeckoId: 'dogs-2', coinpaprikaId: 'dogs-dogs', tradingViewSymbol: 'BINANCE:DOGSUSDT' },
+            'dogs': { symbol: 'DOGS', name: this.currentLanguage === 'fa' ? 'داگز' : 'Dogs', coingeckoId: 'dogs-2', coinpaprikaId: 'dogs-dogs', tradingViewSymbol: 'BINANCE:DOGSUSDT' },
             'sonic': { symbol: 'S', name: this.currentLanguage === 'fa' ? 'سونیک' : 'Sonic', coingeckoId: 'sonic-3', coinpaprikaId: 's-sonic', tradingViewSymbol: 'COINEX:SUSDT' },
             'hyperliquid': { symbol: 'HYPE', name: this.currentLanguage === 'fa' ? 'هایپر لیکویید' : 'Hyperliquid', coingeckoId: 'hyperliquid', coinpaprikaId: 'hype-hyperliquid', tradingViewSymbol: 'KUCOIN:HYPEUSDT' },
             'pump-fun': { symbol: 'PUMP', name: this.currentLanguage === 'fa' ? 'پامپ فان' : 'Pump.fun', coingeckoId: 'pump-fun', coinpaprikaId: 'pump-pumpfun', tradingViewSymbol: 'BYBIT:PUMPUSDT' },
@@ -664,7 +691,7 @@ class CryptoAnalyzer {
             'story-2': { symbol: 'IP', name: this.currentLanguage === 'fa' ? 'استوری' : 'Story', coingeckoId: 'story-2', coinpaprikaId: 'ip-story', tradingViewSymbol: 'MEXC:IPUSDT' },
             'binance-staked-sol': { symbol: 'BNSOL', name: this.currentLanguage === 'fa' ? 'بایننس استیکد سول' : 'Binance Staked SOL', coingeckoId: 'binance-staked-sol', coinpaprikaId: 'bnsol-binance-staked-sol', tradingViewSymbol: 'BINANCE:BNSOLUSDT' },
             sky: { symbol: 'SKY', name: this.currentLanguage === 'fa' ? 'اسکای' : 'Sky', coingeckoId: 'sky', coinpaprikaId: 'sky-sky', tradingViewSymbol: 'OKX:SKYUSDT' },
-            'official-trump': { symbol: 'TRUMP', name: this.currentLanguage === 'fa' ? 'آفیشال ترامپ' : 'Official Trump', coingeckoId: 'official-trump', coinpaprikaId: 'sky-trump-official-trump', tradingViewSymbol: 'MEXC:TRUMPUSDT' },
+            'official-trump': { symbol: 'TRUMP', name: this.currentLanguage === 'fa' ? 'آفیشال ترامپ' : 'Official Trump', coingeckoId: 'official-trump', coinpaprikaId: 'trump-official-trump', tradingViewSymbol: 'MEXC:TRUMPUSDT' },
             sushi: { symbol: 'SUSHI', name: this.currentLanguage === 'fa' ? 'سوشی' : 'Sushi', coingeckoId: 'sushi', coinpaprikaId: 'sushi-sushi', tradingViewSymbol: 'BINANCE:SUSHIUSDT' },
             harmony: { symbol: 'ONE', name: this.currentLanguage === 'fa' ? 'هارمونی' : 'Harmony', coingeckoId: 'harmony', coinpaprikaId: 'one-harmony', tradingViewSymbol: 'BINANCE:ONEUSDT' },
             bonk: { symbol: 'BONK', name: this.currentLanguage === 'fa' ? 'بونک' : 'Bonk', coingeckoId: 'bonk', coinpaprikaId: 'bonk-bonk', tradingViewSymbol: 'BINANCE:BONKUSDT' },
@@ -1706,7 +1733,7 @@ class CryptoAnalyzer {
                         content: prompt
                     }
                 ],
-                max_tokens: 3000,
+                max_tokens: 8192,
                 temperature: 0.7
             })
         });
@@ -1716,7 +1743,17 @@ class CryptoAnalyzer {
         }
 
         const data = await response.json();
-        return data.choices[0].message.content;
+        let content = data.choices[0].message.content;
+
+        // Check if response was truncated due to max_tokens
+        const finishReason = data.choices[0].finish_reason;
+        if (finishReason === 'length') {
+            content += '\n\n---\n\n' + (this.currentLanguage === 'fa' ?
+                '⚠️ **توجه:** تحلیل به دلیل محدودیت طول پاسخ ناقص است. لطفاً تحلیل دیگری با درخواست کوتاه‌تر انجام دهید.' :
+                '⚠️ **Note:** Analysis was truncated due to response length limits. Please run another analysis with a shorter request.');
+        }
+
+        return content;
     }
 
     // تابع جدید برای دریافت داده‌های صرافی‌ها
@@ -2073,27 +2110,26 @@ class CryptoAnalyzer {
         return analysis;
     }
 
-    // تابع جدید برای دریافت اخبار از CoinGecko API
+    // تابع جدید برای دریافت اخبار از RSS feeds (بدون نیاز به API Key)
     async fetchCryptoNews() {
         try {
-            // استفاده از API خبری CryptoCompare
-            const response = await fetch(`https://min-api.cryptocompare.com/data/v2/news/?lang=EN`);
+            const response = await fetch('https://api.rss2json.com/v1/api.json?rss_url=https://cointelegraph.com/rss');
             if (!response.ok) throw new Error('News API Error');
-            
+
             const data = await response.json();
-            const newsItems = data.Data.slice(0, 8); // 8 خبر اول
+            const newsItems = data.items.slice(0, 8);
 
             return newsItems.map(item => ({
                 title: item.title,
-                source: item.source,
-                date: new Date(item.published_on * 1000), // تبدیل تایم‌استمپ
-                description: item.body.substring(0, 100) + '...',
-                link: item.url,
-                important: item.categories.includes('BTC') || item.categories.includes('Market') // تشخیص مهم بودن
+                source: 'CoinTelegraph',
+                date: new Date(item.pubDate),
+                description: item.description.replace(/<[^>]*>/g, '').substring(0, 100) + '...',
+                link: item.link,
+                important: item.categories && (item.categories.includes('BTC') || item.categories.includes('Markets') || item.title.includes('Bitcoin'))
             }));
         } catch (error) {
             console.warn('Error fetching news:', error);
-            return []; // آرایه خالی برمی‌گردانیم، نه خبر فیک
+            return this.getDefaultNews();
         }
     }
 
@@ -2102,7 +2138,7 @@ class CryptoAnalyzer {
             {
                 title: '📈 بازار ارزهای دیجیتال در نوسان',
                 source: 'Crypto Analysis',
-                date: new Date().toISOString(),
+                date: new Date(),
                 description: 'تحلیل تکنیکال نشان‌دهنده فرصت‌های معاملاتی مناسب در بازار است.',
                 link: '#',
                 important: false
@@ -2163,7 +2199,7 @@ class CryptoAnalyzer {
         newsContent.innerHTML = newsHTML;
     }
 
-    // تابع جدید برای دریافت داده‌های پیشرفته از Blockchain.com
+    // تابع جدید برای دریافت داده‌های پیشرفته بلاکچین
     async fetchBlockchainData() {
         try {
             const symbol = this.cryptoInfo.symbol;
@@ -2171,71 +2207,62 @@ class CryptoAnalyzer {
 
             if (symbol === 'BTC') {
                 const stats = await this.fetchBTCStats();
-                // فقط در صورتی که داده واقعی باشد ذخیره می‌کنیم
                 if (stats) {
                     this.cryptoData.blockchain = {
                         networkDifficulty: stats.difficulty,
                         hashRate: stats.hash_rate,
                         transactionCount: stats.n_tx,
-                        activeAddresses: null, // این API آدرس فعال نمی‌دهد
+                        activeAddresses: null,
                         transactionVolume: stats.total_btc_sent
                     };
                 }
             } else if (symbol === 'ETH') {
-                // استفاده از Blockscout یا Etherscan (نسخه دمو)
-                // برای اطمینان، اگر داده‌ای نبود، نال رد می‌کنیم تا UI هندل کند
-                this.cryptoData.blockchain = null; 
+                await this.fetchEthereumData();
+            } else if (this._blockchairSlugs[symbol]) {
+                await this.fetchBlockchairData(this._blockchairSlugs[symbol]);
             } else {
                 this.cryptoData.blockchain = null;
             }
         } catch (error) {
             console.warn('Blockchain data fetch failed:', error);
-            this.cryptoData.blockchain = null; // داده فیک نمی‌دهیم
+            this.cryptoData.blockchain = null;
         }
+    }
+
+    // دریافت داده‌های بلاکچین از Blockchair (بدون نیاز به API Key)
+    async fetchBlockchairData(slug) {
+        const response = await fetch(`https://api.blockchair.com/${slug}/stats`);
+        if (!response.ok) throw new Error(`Blockchair API error for ${slug}`);
+
+        const json = await response.json();
+        const data = json.data;
+
+        const rawVolume = parseFloat(data.volume_24h_approximate || data.volume_24h || 0);
+        const priceUsd = parseFloat(data.market_price_usd || 0);
+        const decimals = (slug === 'bitcoin' || slug === 'bitcoin-cash' || slug === 'bitcoin-sv' || slug === 'litecoin' || slug === 'dogecoin' || slug === 'dash') ? 1e8 : 1e6;
+        const volumeUsd = priceUsd > 0 ? (rawVolume / decimals) * priceUsd : rawVolume;
+
+        this.cryptoData.blockchain = {
+            networkDifficulty: parseFloat(data.difficulty || 0),
+            hashRate: parseFloat(data.hashrate_24h || data.hashrate || 0),
+            transactionCount: parseInt(data.transactions_24h || data.transactions || 0),
+            activeAddresses: parseInt(data.address_count || data.active_addresses || 0),
+            transactionVolume: volumeUsd
+        };
     }
 
     async fetchBTCStats() {
         try {
             const response = await fetch('https://api.blockchain.info/stats');
-            if (!response.ok) throw new Error('BTC Stats Error');
+            if (!response.ok) throw new Error(`HTTP error! status: ${response.status}`);
             return await response.json();
         } catch (error) {
             console.warn('Error fetching BTC stats:', error);
-            return null; // برگرداندن نال به جای اعداد ساختگی
+            return null;
         }
     }
 
-    // تابع جدید برای دریافت آمار بیت‌کوین با API به‌روز
-    async fetchBTCStats() {
-        try {
-            // استفاده از API جدیدتر Blockchain.com
-            const response = await fetch('https://api.blockchain.info/stats');
-            
-            if (!response.ok) {
-                throw new Error(`HTTP error! status: ${response.status}`);
-            }
-            
-            const data = await response.json();
-            console.log('BTC Stats API response:', data);
-            
-            return data;
-            
-        } catch (error) {
-            console.error('Error fetching BTC stats:', error);
-            // داده‌های نمونه در صورت خطا
-            return {
-                difficulty: 67567892345,
-                hash_rate: 24567892345678,
-                tx_count: 345678,
-                n_btc_mempool_txs: 4567,
-                total_btc_sent: 45678923456,
-                miners_revenue_usd: 45678923,
-                market_price_usd: this.cryptoData.price || 45000
-            };
-        }
-    }
-
-    // تابع جدید برای دریافت داده‌های بازار بیت‌کوین
+    // تابع برای دریافت داده‌های بازار بیت‌کوین
     async fetchBTCMarketData() {
         try {
             // استفاده از CoinGecko برای داده‌های بازار
@@ -2265,36 +2292,29 @@ class CryptoAnalyzer {
 
     async fetchEthereumData() {
         try {
-            // استفاده از API رایگان Blockscout برای داده‌های اتریوم
             const response = await fetch('https://eth.blockscout.com/api/v2/stats');
-            
-            if (!response.ok) {
-                throw new Error('خطا در دریافت داده‌های اتریوم از Blockscout');
-            }
-            
+            if (!response.ok) throw new Error('Blockscout API error');
+
             const data = await response.json();
-            
-            // استخراج و مپ کردن داده‌ها به فرمتی که بقیه کد انتظار دارد
+
+            const txCountToday = parseInt(data.transactions_today || 0);
+            const gasUsedToday = parseFloat(data.gas_used_today || 0);
+            const avgGasPriceGwei = parseFloat(data.gas_prices?.average || 0);
+            const txVolumeUsd = avgGasPriceGwei > 0 && gasUsedToday > 0
+                ? (gasUsedToday * avgGasPriceGwei * 1e-9 * parseFloat(data.coin_price || 0))
+                : 0;
+
             this.cryptoData.blockchain = {
-                networkDifficulty: parseFloat(data.network_difficulty || 0),
-                hashRate: parseFloat(data.hash_rate || 0),
-                transactionCount: data.total_transactions ? parseInt(data.total_transactions) : 0,
-                activeAddresses: data.active_addresses || 0,
-                transactionVolume: parseFloat(data.transactions_today || 0), // شبیه‌سازی تقریبی
-                stats: {
-                    difficulty: parseFloat(data.network_difficulty || 0),
-                    hash_rate: parseFloat(data.hash_rate || 0),
-                    tx_count: data.total_transactions ? parseInt(data.total_transactions) : 0,
-                    average_transaction_fee: parseFloat(data.gas_price || 0) / 1e9 // تبدیل Gwei به ETH
-                }
+                networkDifficulty: 0,
+                hashRate: 0,
+                transactionCount: txCountToday,
+                activeAddresses: parseInt(data.total_addresses || 0),
+                transactionVolume: txVolumeUsd
             };
-            
+
         } catch (error) {
             console.error('Error fetching Ethereum data:', error);
-            // پرتاب خطا تا در fetchBlockchainData مدیریت شود
-            throw new Error(this.currentLanguage === 'fa' ? 
-                'خطا در دریافت داده‌های اتریوم' : 
-                'Error fetching Ethereum data');
+            throw new Error('Error fetching Ethereum data');
         }
     }
 
@@ -2393,7 +2413,7 @@ class CryptoAnalyzer {
             return;
         }
         
-        if (!this.cryptoData.blockchain || !this.cryptoData.blockchain.networkDifficulty) {
+        if (!this.cryptoData.blockchain) {
             blockchainContent.innerHTML = `
                 <div class="no-data">
                     <i class="fas fa-exclamation-triangle"></i>
@@ -3290,7 +3310,7 @@ displayResults(analysis) {
     this.displayLiveChart(cryptoInfo);
 
     // نمایش شاخص‌ها
-    this.displayIndicators(cryptoData.technicalIndicators, cryptoData.fearGreedIndex);
+    this.displayIndicators();
 
     // نمایش سطوح حمایت و مقاومت
     this.displayLevels();
@@ -3399,33 +3419,42 @@ displaySummary(cryptoInfo, cryptoData) {
 
 displayLiveChart(cryptoInfo) {
     const liveChartContainer = document.getElementById('liveChartContainer');
-    
+
     try {
-        // بررسی اینکه آیا نماد معتبر هست
         const tradingViewSymbol = cryptoInfo.tradingViewSymbol || 'BINANCE:BTCUSDT';
-        
+
         liveChartContainer.innerHTML = `
-            <div class="chart-container">
-                <iframe 
-                    src="https://www.tradingview.com/widgetembed/?frameElementId=tradingview_widget&symbol=${tradingViewSymbol}&interval=240&hidesidetoolbar=1&hidetoptoolbar=1&symboledit=1&saveimage=1&toolbarbg=F1F3F6&studies=[]&hideideas=1&theme=dark&style=10&timezone=Etc/UTC&studies_overrides={}&overrides={}&enabled_features=[]&disabled_features=[]&locale=${this.currentLanguage === 'fa' ? 'fa_IR' : 'en'}"
-                    frameborder="0"
-                    allowtransparency="true"
-                    scrolling="no"
-                    allowfullscreen
-                    style="width:100%; height:400px;"
-                    onload="console.log('Chart loaded successfully')"
-                    onerror="this.style.display='none'; document.getElementById('chartFallback').style.display='block';">
-                </iframe>
-                <div id="chartFallback" style="display:none; text-align:center; padding:20px; background:#f8f9fa; border-radius:10px;">
-                    <i class="fas fa-exclamation-triangle" style="font-size:2rem; color:#ffc107; margin-bottom:10px;"></i>
-                    <p>${this.currentLanguage === 'fa' ? 'نمودار بارگیری نشد. لطفاً VPN خود را روشن کنید.' : 'Chart failed to load. Please check your VPN connection.'}</p>
-                    <button onclick="location.reload()" class="retry-btn">
-                        <i class="fas fa-redo"></i> 
-                        ${this.currentLanguage === 'fa' ? 'تلاش مجدد' : 'Retry'}
-                    </button>
-                </div>
+            <div class="tradingview-widget-container" style="height:100%;width:100%;">
+                <div class="tradingview-widget-container__widget" style="height:calc(100% - 32px);width:100%;"></div>
             </div>
         `;
+
+        const config = {
+            autosize: true,
+            symbol: tradingViewSymbol,
+            interval: "240",
+            timezone: "Etc/UTC",
+            theme: "dark",
+            style: "1",
+            locale: this.currentLanguage === 'fa' ? 'fa_IR' : 'en',
+            allow_symbol_change: true,
+            hide_side_toolbar: true,
+            hide_top_toolbar: true,
+            save_image: true,
+            studies: [],
+            hideideas: true,
+            show_popup_button: false,
+            show_volume: true,
+            withdateranges: true
+        };
+
+        const script = document.createElement('script');
+        script.type = 'text/javascript';
+        script.src = 'https://s3.tradingview.com/external-embedding/embed-widget-advanced-chart.js';
+        script.async = true;
+        script.textContent = JSON.stringify(config);
+
+        liveChartContainer.querySelector('.tradingview-widget-container').appendChild(script);
     } catch (error) {
         console.error('Error loading chart:', error);
         liveChartContainer.innerHTML = `
@@ -3462,10 +3491,10 @@ displayIndicators() {
     const adxValue = indicators.adx ?? 0;
 
     // استفاده از توابع جدید برای فرمت‌بندی با بررسی خطا
-    const formattedSMA20 = this.formatSmallNumber(indicators.sma20 ?? 0);
-    const formattedSMA50 = this.formatSmallNumber(indicators.sma50 ?? 0);
-    const formattedEMA12 = this.formatSmallNumber(indicators.ema12 ?? 0);
-    const formattedEMA26 = this.formatSmallNumber(indicators.ema26 ?? 0);
+    const formattedSMA20 = this.formatPrice(indicators.sma20 ?? 0, this.cryptoInfo.symbol);
+    const formattedSMA50 = this.formatPrice(indicators.sma50 ?? 0, this.cryptoInfo.symbol);
+    const formattedEMA12 = this.formatPrice(indicators.ema12 ?? 0, this.cryptoInfo.symbol);
+    const formattedEMA26 = this.formatPrice(indicators.ema26 ?? 0, this.cryptoInfo.symbol);
     const formattedVWAP = this.formatPrice(indicators.vwap ?? 0, this.cryptoInfo.symbol);
     
     indicatorsGrid.innerHTML = `
@@ -3747,10 +3776,11 @@ getGeneralAnalysis(cryptoData) {
         `;
         
         // استایل‌دهی به نوتیفیکیشن
+        const isRtl = this.currentLanguage === 'fa';
         notification.style.cssText = `
             position: fixed;
             top: 20px;
-            right: 20px;
+            ${isRtl ? 'right' : 'left'}: 20px;
             background: ${type === 'success' ? '#4CAF50' : '#2196F3'};
             color: white;
             padding: 15px 20px;
