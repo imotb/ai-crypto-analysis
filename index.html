@@ -1,364 +1,205 @@
 <!DOCTYPE html>
-<html lang="fa" dir="rtl">
+<html lang="fa" dir="rtl" data-theme="dark">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="description" content="AI-powered cryptocurrency analysis dashboard — live data, technical indicators, and LLM reports.">
     <title>Crypto Analysis Assistant</title>
-    <link rel="icon" type="image/x-icon" href="icons\fav.ico">
-    <link rel="stylesheet" href="style.css">
-    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+    <link rel="icon" type="image/png" href="icons/crypto/bitcoin.png">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@500;700&display=swap" rel="stylesheet">
     <link href="https://cdn.jsdelivr.net/gh/rastikerdar/vazirmatn@v33.003/Vazirmatn-font-face.css" rel="stylesheet">
-    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-    <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
-    <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
-    <link href="https://cdnjs.cloudflare.com/ajax/libs/select2/4.0.13/css/select2.min.css" rel="stylesheet" />
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/select2/4.0.13/js/select2.min.js"></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="style.css?v=3.5">
+    <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js" defer></script>
+    <script src="https://cdn.jsdelivr.net/npm/dompurify@3.2.4/dist/purify.min.js" defer></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js" defer></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js" defer></script>
+    <script type="module" src="js/main.js"></script>
 </head>
 <body>
-    <div class="container">
-        <header class="header">
-            <div class="header-top">
-                <h1>
-                    <i class="fas fa-chart-line"></i>
-                    <span data-translate="title">
-                        تحلیل هوشمند ارزهای دیجیتال
-                    </span><sub>V2</sub>
-                </h1>
-                <div class="language-switcher">
-                    <button id="langToggle" class="lang-btn">
-                        <i class="fas fa-globe"></i>
-                        <span id="langText">English</span>
-                    </button>
+    <div class="app">
+        <!-- ============ Top bar ============ -->
+        <header class="topbar">
+            <div class="brand">
+                <div class="brand-mark" aria-hidden="true"><i class="fas fa-chart-line"></i></div>
+                <div>
+                    <h1><span class="gradient-text" data-i18n="title">تحلیل هوشمند ارزهای دیجیتال</span></h1>
+                    <p class="tagline" data-i18n="subtitle">تحلیل هوشمندانه ارزهای دیجیتال با تکیه بر هوش مصنوعی</p>
                 </div>
             </div>
-            <div class="header-subtitle">
-                <p data-translate="subtitle">تحلیل هوشمندانه ارزهای دیجیتال با قدرت هوش مصنوعی</p>
-                <div class="language-switcher-subtitle">
-                    <button id="langToggleSubtitle" class="lang-btn">
-                        <i class="fas fa-globe"></i>
-                        <span id="langTextSubtitle">English</span>
-                    </button>
-                </div>
+            <div class="topbar-actions">
+                <button id="themeToggle" class="btn btn-icon btn-ghost" type="button" data-i18n-aria="toggleTheme" aria-label="Toggle theme" title="Toggle theme">
+                    <i class="fas fa-moon"></i>
+                </button>
+                <button id="langToggle" class="btn" type="button">
+                    <i class="fas fa-globe"></i>
+                    <span id="langText">English</span>
+                </button>
             </div>
         </header>
 
-        <div class="main-content">
-            <!-- بخش تنظیمات -->
-            <div class="settings-panel">
-                <h2><i class="fas fa-cog"></i> <span data-translate="settings">تنظیمات تحلیل</span></h2>
-                
-                <div class="form-group">
-                    <label for="apiKey" data-translate="apiKeyLabel">کلید API OpenRouter:</label>
-                    <input type="text" id="apiKey" data-translate-placeholder="apiKeyPlaceholder" placeholder="کلید API خود را وارد کنید">
-                    <small>
-                        <span data-translate="apiKeyHelp">کلید API خود را از openrouter.ai دریافت کنید</span>
-                        <a href="https://github.com/imotb/ai-crypto-analysis/blob/main/README.md" target="_blank" style="color: #0029ffa6; text-decoration: none;">(Help)</a>
-                    </small>
-                </div>
+        <div class="layout">
+            <!-- ============ Sidebar: settings ============ -->
+            <aside class="sidebar">
+                <form class="card" id="settingsForm" aria-labelledby="settingsTitle" onsubmit="event.preventDefault()">
+                    <h2 class="card-title" id="settingsTitle"><i class="fas fa-sliders"></i> <span data-i18n="settings">تنظیمات تحلیل</span></h2>
 
-                <div class="form-group">
-                    <label for="model" data-translate="modelLabel">مدل هوش مصنوعی:</label>
-                    <select id="model">
-                        <option value="openrouter/free" data-icon="icons\ai\openrouter-free.png">OpenRouter-Random-Free</option>
-                        <option value="openrouter/owl-alpha" data-icon="icons\ai\owl-alpha.png">Owl-Alpha (free)</option>
-                        <option value="openai/gpt-oss-120b:free" data-icon="icons\ai\openai.png">GPT-OSS-120B (free)</option>
-                        <option value="openai/gpt-oss-20b:free" data-icon="icons\ai\openai.png">GPT-OSS-20B (free)</option>
-                        <option value="nvidia/nemotron-3-super-120b-a12b:free" data-icon="icons\ai\nvidia.png">NVIDIA-Nemotron3-Super (free)</option>
-                        <option value="nvidia/nemotron-3-ultra-550b-a55b:free" data-icon="icons\ai\nvidia.png">NVIDIA-Nemotron3-Ultra (free)</option>
-                        <option value="google/gemma-4-31b-it:free" data-icon="icons\ai\gemma.png">Gemma4-31B (free)</option>
-                        <option value="google/gemma-4-26b-a4b-it:free" data-icon="icons\ai\gemma.png">Gemma4-26B-A4B (free)</option>
-                        <option value="qwen/qwen3-coder:free" data-icon="icons\ai\qwen.png">Qwen3-Coder-480B-A35B (free)</option>
-                        <option value="moonshotai/kimi-k2.6:free" data-icon="icons\ai\kimi.png">MoonshotAI-Kimi-K2.6 (free)</option>
-                        <option value="z-ai/glm-4.5-air:free" data-icon="icons\ai\zai.png">Z.ai-GLM4.5-Air (free)</option>
-                        <option value="poolside/laguna-m.1:free" data-icon="icons\ai\poolside.png">Poolside-Laguna-M.1 (free)</option>
-                        <option value="poolside/laguna-xs.2:free" data-icon="icons\ai\poolside.png">Poolside-Laguna-XS.2 (free)</option>
-                        <option value="meta-llama/llama-3.3-70b-instruct:free" data-icon="icons\ai\meta.png">Llama-3.3-70B-Instruct (free)</option>
-                        <option value="cognitivecomputations/dolphin-mistral-24b-venice-edition:free" data-icon="icons\ai\venice.png">Venice-Uncensored (free)</option>
-                        <option value="nousresearch/hermes-3-llama-3.1-405b:free" data-icon="icons\ai\deephermes.png">Hermes3-405B-Instruct (free)</option>
-                        <option value="anthropic/claude-opus-4.8-fast" data-icon="icons\ai\claude.png">Claude-Opus-4.8-Fast (Credits)💰</option>
-                        <option value="anthropic/claude-opus-4.7" data-icon="icons\ai\claude.png">Claude-Opus-4.7 (Credits)💰</option>
-                        <option value="anthropic/claude-sonnet-4.6" data-icon="icons\ai\claude.png">Claude-Sonnet-4.7 (Credits)💰</option>
-                        <option value="openai/gpt-5.5-pro" data-icon="icons\ai\openai.png">OpenAI-GPT-5.5-Pro (Credits)💰</option>
-                        <option value="openai/gpt-5.5" data-icon="icons\ai\openai.png">OpenAI-GPT-5.5 (Credits)💰</option>
-                        <option value="openai/gpt-5.4" data-icon="icons\ai\openai.png">OpenAI-GPT-5.4 (Credits)💰</option>
-                        <option value="deepseek/deepseek-v4-pro" data-icon="icons\ai\deepseek.png">DeepSeek-V4-Pro (Credits)💰</option>
-                        <option value="deepseek/deepseek-v4-flash" data-icon="icons\ai\deepseek.png">DeepSeek-V4-Flash (Credits)💰</option>
-                        <option value="minimax/minimax-m3" data-icon="icons\ai\minimax.png">MiniMax-M3 (Credits)💰</option>
-                        <option value="google/gemini-3.1-pro-preview" data-icon="icons\ai\gemini.png">Gemini-3.1-Pro (Credits)💰</option>
-                        <option value="google/gemini-3.5-flash" data-icon="icons\ai\gemini.png">Gemini-3.5-Flash (Credits)💰</option>
-                        <option value="x-ai/grok-4.3" data-icon="icons\ai\grok.png">xAI-Grok4.3 (Credits)💰</option>
-                        <option value="z-ai/glm-5.1" data-icon="icons\ai\zai.png">Z.AI-GLM-5.1 (Credits)💰</option>
-                        <option value="qwen/qwen3.7-max" data-icon="icons\ai\qwen.png">Qwen3.7-Max (Credits)💰</option>
-                        <option value="qwen/qwen3.6-plus" data-icon="icons\ai\qwen.png">Qwen3.6-Plus (Credits)💰</option>
-                        <option value="xiaomi/mimo-v2.5-pro" data-icon="icons\ai\Xiaomi.png">MiMo-V2.5-Pro (Credits)💰</option>
-                        <option value="xiaomi/mimo-v2.5" data-icon="icons\ai\Xiaomi.png">MiMo-V2.5 (Credits)💰</option>
-                    </select>
-                </div>
-
-                <div class="form-group">
-                    <label for="cryptocurrency" data-translate="cryptoLabel">ارز دیجیتال:</label>
-                    <select id="cryptocurrency">
-                        <option value="bitcoin" data-icon="icons\crypto\bitcoin.png">Bitcoin (BTC)</option>
-                        <option value="ethereum" data-icon="icons\crypto\ethereum.png">Ethereum (ETH)</option>
-                        <option value="binancecoin" data-icon="icons\crypto\bnb.png">Binance Coin (BNB)</option>
-                        <option value="ripple" data-icon="icons\crypto\ripple.png">Ripple (XRP)</option>
-                        <option value="solana" data-icon="icons\crypto\solana.png">Solana (SOL)</option>
-                        <option value="cardano" data-icon="icons\crypto\cardano.png">Cardano (ADA)</option>
-                        <option value="dogecoin" data-icon="icons\crypto\dogecoin.png">Dogecoin (DOGE)</option>
-                        <option value="tron" data-icon="icons\crypto\tron.png">TRON (TRX)</option>
-                        <option value="toncoin" data-icon="icons\crypto\toncoin.png">Toncoin (TON)</option>
-                        <option value="polkadot" data-icon="icons\crypto\polkadot.png">Polkadot (DOT)</option>
-                        <option value="avalanche-2" data-icon="icons\crypto\avalanche.png">Avalanche (AVAX)</option>
-                        <option value="polygon" data-icon="icons\crypto\polygon.png">Polygon (MATIC)</option>
-                        <option value="shiba-inu" data-icon="icons\crypto\shiba-inu.png">Shiba Inu (SHIB)</option>
-                        <option value="chainlink" data-icon="icons\crypto\chainlink.png">Chainlink (LINK)</option>
-                        <option value="litecoin" data-icon="icons\crypto\litecoin.png">Litecoin (LTC)</option>
-                        <option value="uniswap" data-icon="icons\crypto\uniswap.png">Uniswap (UNI)</option>
-                        <option value="bitcoin-cash" data-icon="icons\crypto\bitcoin-cash.png">Bitcoin Cash (BCH)</option>
-                        <option value="stellar" data-icon="icons\crypto\stellar.png">Stellar (XLM)</option>
-                        <option value="near" data-icon="icons\crypto\near.png">NEAR Protocol (NEAR)</option>
-                        <option value="monero" data-icon="icons\crypto\monero.png">Monero (XMR)</option>
-                        <option value="ethereum-classic" data-icon="icons\crypto\ethereum-classic.png">Ethereum Classic (ETC)</option>
-                        <option value="cosmos-hub" data-icon="icons\crypto\cosmos.png">Cosmos (ATOM)</option>
-                        <option value="render-token" data-icon="icons\crypto\render-token.png">Render (RENDER)</option>
-                        <option value="stacks" data-icon="icons\crypto\stacks.png">Stacks (STX)</option>
-                        <option value="injective-protocol" data-icon="icons\crypto\injective-protocol.png">Injective (INJ)</option>
-                        <option value="vechain" data-icon="icons\crypto\vechain.png">VeChain (VET)</option>
-                        <option value="the-sandbox" data-icon="icons\crypto\sandbox.png">The Sandbox (SAND)</option>
-                        <option value="pax-gold" data-icon="icons\crypto\pax-gold.png">PAX Gold (PAXG)</option>
-                        <option value="tezos" data-icon="icons\crypto\tezos.png">Tezos (XTZ)</option>
-                        <option value="chiliz" data-icon="icons\crypto\chiliz.png">Chiliz (CHZ)</option>
-                        <option value="kucoin-shares" data-icon="icons\crypto\kucoin-token.png">KuCoin (KCS)</option>
-                        <option value="floki" data-icon="icons\crypto\floki.png">FLOKI (FLOKI)</option>
-                        <option value="trust-wallet-token" data-icon="icons\crypto\trust-wallet-token.png">Trust Wallet Token (TWT)</option>
-                        <option value="sui" data-icon="icons\crypto\sui.png">Sui (SUI)</option>
-                        <option value="pepe" data-icon="icons\crypto\pepe.png">Pepe (PEPE)</option>
-                        <option value="baby-doge-coin" data-icon="icons\crypto\baby-doge-coin.png">BabyDoge Coin (BABYDOGE)</option>
-                        <option value="zcash" data-icon="icons\crypto\zcash.png">Zcash (ZEC)</option>
-                        <option value="leo-token" data-icon="icons\crypto\leo-token.png">LEO Token (LEO)</option>
-                        <option value="celestia" data-icon="icons\crypto\celestia.png">Celestia (TIA)</option>
-                        <option value="sonic" data-icon="icons\crypto\sonic.png">Sonic (S)</option>
-                        <option value="dogs" data-icon="icons\crypto\dogs.png">Dogs (DOGS)</option>
-                        <option value="hyperliquid" data-icon="icons\crypto\hyperliquid.png">Hyperliquid (HYPE)</option>
-                        <option value="electroneum" data-icon="icons\crypto\electroneum.png">Electroneum (ETN)</option>
-                        <option value="tether-gold" data-icon="icons\crypto\tether-gold.png">Tether Gold (XAUT)</option>
-                        <option value="wanchain" data-icon="icons\crypto\wanchain.png">Wanchain (WAN)</option>
-                        <option value="pump-fun" data-icon="icons\crypto\pump-fun.png">Pump.fun (PUMP)</option>
-                        <option value="kusama" data-icon="icons\crypto\kusama.png">Kusama (KSM)</option>
-                        <option value="aave" data-icon="icons\crypto\aave.png">Aave (AAVE)</option>
-                        <option value="aptos" data-icon="icons\crypto\aptos.png">Aptos (APT)</option>
-                        <option value="apex-token-2" data-icon="icons\crypto\apex-protocol.png">ApeX Protocol (APEX)</option>
-                        <option value="okb" data-icon="icons\crypto\okb.png">OKB (OKB)</option>
-                        <option value="notcoin" data-icon="icons\crypto\notcoin.png">Notcoin (NOT)</option>
-                        <option value="optimism" data-icon="icons\crypto\optimism.png">Optimism (OP)</option>
-                        <option value="decentraland" data-icon="icons\crypto\decentraland.png">Decentraland (MANA)</option>
-                        <option value="internet-computer" data-icon="icons\crypto\internet-computer.png">Internet Computer (ICP)</option>
-                        <option value="curve-dao-token" data-icon="icons\crypto\curve-dao-token.png">Curve DAO (CRV)</option>
-                        <option value="zora" data-icon="icons\crypto\zora.png">Zora (ZORA)</option>
-                        <option value="ondo-finance" data-icon="icons\crypto\ondo-finance.png">Ondo (ONDO)</option>
-                        <option value="aster-2" data-icon="icons\crypto\aster-2.png">Aster (ASTER)</option>
-                        <option value="arbitrum" data-icon="icons\crypto\arbitrum.png">Arbitrum (ARB)</option>
-                        <option value="pancakeswap-token" data-icon="icons\crypto\pancakeswap-token.png">PancakeSwap (CAKE)</option>
-                        <option value="bittensor" data-icon="icons\crypto\bittensor.png">Bittensor (TAO)</option>
-                        <option value="story-2" data-icon="icons\crypto\story-2.png">Story (IP)</option>
-                        <option value="binance-staked-sol" data-icon="icons\crypto\binance-staked-sol.png">Binance Staked SOL (BNSOL)</option>
-                        <option value="sky" data-icon="icons\crypto\sky.png">Sky (SKY)</option>
-                        <option value="official-trump" data-icon="icons\crypto\official-trump.png">Official Trump (TRUMP)</option>
-                        <option value="sushi" data-icon="icons\crypto\sushi.png">Sushi (SUSHI)</option>
-                        <option value="harmony" data-icon="icons\crypto\harmony.png">Harmony (ONE)</option>
-                        <option value="bonk" data-icon="icons\crypto\bonk.png">Bonk (BONK)</option>
-                        <option value="neo" data-icon="icons\crypto\neo.png">NEO (NEO)</option>
-                        <option value="plasma" data-icon="icons\crypto\plasma.png">Plasma (XPL)</option>
-                        <option value="pudgy-penguins" data-icon="icons\crypto\pudgy-penguins.png">Pudgy Penguins (PENGU)</option>
-                        <option value="jasmycoin" data-icon="icons\crypto\jasmycoin.png">JasmyCoin (JASMY)</option>
-                        <option value="cheems-token" data-icon="icons\crypto\cheems-token.png">Cheems Token (CHEEMS)</option>
-                        <option value="linea" data-icon="icons\crypto\linea.png">Linea (LINEA)</option>
-                        <option value="mitosis" data-icon="icons\crypto\mitosis.png">Mitosis (MITO)</option>
-                        <option value="pyth-network" data-icon="icons\crypto\pyth-network.png">Pyth Network (PYTH)</option>
-                        <option value="starknet" data-icon="icons\crypto\starknet.png">Starknet (STRK)</option>
-                        <option value="avantis" data-icon="icons\crypto\avantis.png">Avantis (AVNT)</option>
-                        <option value="smooth-love-potion" data-icon="icons\crypto\smooth-love-potion.png">Smooth Love Potion (SLP)</option>
-                        <option value="fasttoken" data-icon="icons\crypto\fasttoken.png">Fasttoken (FTN)</option>
-                        <option value="dash" data-icon="icons\crypto\dash.png">Dash (DASH)</option>
-                        <option value="reserve-rights-token" data-icon="icons\crypto\reserve-rights-token.png">Reserve Rights (RSR)</option>
-                        <option value="digibyte" data-icon="icons\crypto\digibyte.png">DigiByte (DGB)</option>
-                        <option value="audius" data-icon="icons\crypto\audius.png">Audius (AUDIO)</option>
-                        <option value="x-empire" data-icon="icons\crypto\x-empire.png">X Empire (X)</option>
-                        <option value="kava" data-icon="icons\crypto\kava.png">Kava (KAVA)</option>
-                        <option value="stepn" data-icon="icons\crypto\stepn.png">Stepn (GMT)</option>
-                        <option value="dogwifcoin" data-icon="icons\crypto\dogwifcoin.png">dogwifhat (WIF)</option>
-                        <option value="sei-network" data-icon="icons\crypto\sei-network.png">Sei (SEI)</option>
-                        <option value="syrup" data-icon="icons\crypto\syrup.png">Syrup (SYRUP)</option>
-                        <option value="altlayer" data-icon="icons\crypto\altlayer.png">AltLayer (ALT)</option>
-                        <option value="mantle" data-icon="icons\crypto\mantle.png">Mantle (MNT)</option>
-                        <option value="kaspa" data-icon="icons\crypto\kaspa.png">Kaspa (KAS)</option>
-                        <option value="flare-networks" data-icon="icons\crypto\flare-networks.png">Flare (FLR)</option>
-                        <option value="gatechain-token" data-icon="icons\crypto\gatechain-token.png">Gate (GT)</option>
-                        <option value="sun-token" data-icon="icons\crypto\sun-token.png">Sun Token (SUN)</option>
-                        <option value="gas" data-icon="icons\crypto\gas.png">Gas (GAS)</option>
-                        <option value="helium" data-icon="icons\crypto\helium.png">Helium (HNT)</option>
-                        <option value="coredaoorg" data-icon="icons\crypto\coredaoorg.png">Core (CORE)</option>
-                        <option value="mocaverse" data-icon="icons\crypto\mocaverse.png">Moca Network (MOCA)</option>
-                        <option value="alphabet-xstock" data-icon="icons\crypto\alphabet-xstock.png">Alphabet xStock (GOOGLX)</option>
-                        <option value="nvidia-xstock" data-icon="icons\crypto\nvidia-xstock.png">NVIDIA xStock (NVDAX)</option>
-                        <option value="apple-xstock" data-icon="icons\crypto\apple-xstock.png">Apple xStock (AAPLX)</option>
-                        <option value="tesla-xstock" data-icon="icons\crypto\tesla-xstock.png">Tesla xStock (TSLAX)</option>
-                        <option value="circle-xstock" data-icon="icons\crypto\circle-xstock.png">Circle xStock (CRCLX)</option>
-                        <option value="microstrategy-xstock" data-icon="icons\crypto\microstrategy-xstock.png">MicroStrategy xStock (MSTRX)</option>
-                        <option value="sp500-xstock" data-icon="icons\crypto\sp500-xstock.png">SP500 xStock (SPYX)</option>
-                        <option value="meta-xstock" data-icon="icons\crypto\meta-xstock.png">Meta xStock (METAX)</option>
-                        <option value="cisco-xstock" data-icon="icons\crypto\cisco-xstock.png">Cisco xStock (CSCOX)</option>
-                        <option value="broadcom-xstock" data-icon="icons\crypto\broadcom-xstock.png">Broadcom xStock (AVGOX)</option>
-                        <option value="crowdstrike-xstock" data-icon="icons\crypto\crowdstrike-xstock.png">CrowdStrike xStock (CRWDX)</option>
-                        <option value="amazon-xstock" data-icon="icons\crypto\amazon-xstock.png">Amazon xStock (AMZNX)</option>
-                    </select>
-                </div>
-
-                <div class="form-group">
-                    <label data-translate="analysisTypeLabel">نوع تحلیل:</label>
-                    <div class="radio-group">
-                        <label><input type="radio" name="analysisType" value="short" checked> <span data-translate="analysisTypeShort">تحلیل کوتاه مدت</span></label>
-                        <label><input type="radio" name="analysisType" value="long"> <span data-translate="analysisTypeLong">تحلیل بلند مدت</span></label>
-                    </div>
-                </div>
-
-                <button id="analyzeBtn" class="analyze-btn">
-                    <i class="fas fa-magic"></i> <span data-translate="analyzeButton">شروع تحلیل هوشمند</span>
-                </button>
-            </div>
-
-            <!-- بخش نتایج -->
-            <div class="results-panel" id="resultsPanel" style="display: none;">
-                <h2><i class="fas fa-chart-bar"></i> <span data-translate="resultsTitle">نتایج تحلیل</span></h2>
-                
-                <!-- وضعیت تحلیل -->
-                <div class="analysis-status" id="analysisStatus">
-                    <div class="loading">
-                        <i class="fas fa-spinner fa-spin"></i>
-                        <p data-translate="loadingText">در حال دریافت داده‌های لحظه‌ای...</p>
-                    </div>
-                </div>
-
-                <!-- نتایج تحلیل -->
-                <div class="analysis-results" id="analysisResults" style="display: none;">
-                    <!-- بخش اطلاعات ارز بهبود یافته -->
-                    <div class="crypto-info-card">
-                        <h3 data-translate="cryptoInfoTitle">اطلاعات ارز (لحظه‌ای)</h3>
-                        <div class="crypto-info-content" id="cryptoInfoContent"></div>
+                    <div class="field">
+                        <label for="apiKey" data-i18n="apiKeyLabel">کلید API OpenRouter:</label>
+                        <div class="input-wrap">
+                            <input type="password" id="apiKey" class="input" autocomplete="off" spellcheck="false" data-i18n-placeholder="apiKeyPlaceholder" placeholder="کلید API خود را وارد کنید">
+                            <button type="button" id="keyEye" class="eye-btn" data-i18n-aria="showKey" aria-label="Show API key"><i class="fas fa-eye"></i></button>
+                        </div>
+                        <small class="help">
+                            <span data-i18n="apiKeyHelp">کلید API خود را از openrouter.ai دریافت کنید</span>
+                            <a href="https://openrouter.ai/settings/keys" target="_blank" rel="noopener">(OpenRouter)</a>
+                        </small>
                     </div>
 
-                    <!-- خلاصه تحلیل -->
-                    <div class="summary-card">
-                        <h3 data-translate="summaryTitle">خلاصه تحلیل</h3>
-                        <div class="summary-content" id="summaryContent"></div>
+                    <div class="field">
+                        <label id="modelLabel" data-i18n="modelLabel">مدل هوش مصنوعی:</label>
+                        <div id="modelCombo" class="combo" role="combobox" aria-labelledby="modelLabel"></div>
                     </div>
 
-                    <!-- نمودار زنده -->
-                    <div class="live-chart-card">
-                        <h3 data-translate="liveChartTitle">نمودار زنده</h3>
-                        <div class="live-chart-container" id="liveChartContainer"></div>
+                    <div class="field">
+                        <label id="cryptoLabel" data-i18n="cryptoLabel">ارز دیجیتال:</label>
+                        <div id="cryptoCombo" class="combo" role="combobox" aria-labelledby="cryptoLabel"></div>
                     </div>
 
-                    <!-- بخش اندیکاتورهای تکنیکال بهبود یافته -->
-                    <div class="indicators-card">
-                        <h3 data-translate="indicatorsTitle">شاخص‌های تکنیکال (محاسبه شده)</h3>
-                        <div class="indicators-grid" id="indicatorsGrid"></div>
-                    </div>
-
-                    <!-- بخش سطوح حمایت و مقاومت بهبود یافته -->
-                    <div class="levels-card">
-                        <h3 data-translate="levelsTitle">سطوح حمایت و مقاومت</h3>
-                        <div class="levels-content" id="levelsContent"></div>
-                    </div>
-
-                    <!-- بخش جدید برای نمایش پروفایل حجم -->
-                    <div class="volume-profile-card">
-                        <h3 data-translate="volumeProfileTitle">پروفایل حجم</h3>
-                        <div class="volume-profile-content" id="volumeProfileContent"></div>
-                    </div>
-
-                    <!-- بخش داده‌های بلاکچین -->
-                    <div class="blockchain-card">
-                        <h3 data-translate="blockchainTitle">⛓️ داده‌های پیشرفته بلاکچین</h3>
-                        <div class="blockchain-content" id="blockchainContent">
-                            <div class="loading">
-                                <i class="fas fa-spinner fa-spin"></i>
-                                <p data-translate="loadingBlockchainText">در حال دریافت داده‌های بلاکچین...</p>
-                            </div>
+                    <div class="field">
+                        <label data-i18n="analysisTypeLabel">نوع تحلیل:</label>
+                        <div class="segmented" role="radiogroup" data-i18n-aria="analysisTypeGroup" aria-label="Analysis type">
+                            <span>
+                                <input type="radio" name="analysisType" id="typeShort" value="short" checked>
+                                <label for="typeShort" data-i18n="analysisTypeShort">تحلیل کوتاه‌مدت</label>
+                            </span>
+                            <span>
+                                <input type="radio" name="analysisType" id="typeLong" value="long">
+                                <label for="typeLong" data-i18n="analysisTypeLong">تحلیل بلندمدت</label>
+                            </span>
                         </div>
                     </div>
 
-                    <!-- بخش متریک‌های پیشرفته -->
-                    <div class="advanced-metrics-card">
-                        <h3 data-translate="advancedMetricsTitle">📈 متریک‌های پیشرفته شبکه</h3>
-                        <div class="advanced-metrics-content" id="advancedMetricsContent">
-                            <div class="loading">
-                                <i class="fas fa-spinner fa-spin"></i>
-                                <p data-translate="loadingMetricsText">در حال محاسبه متریک‌های پیشرفته...</p>
+                    <button id="analyzeBtn" class="btn btn-primary btn-lg" type="button">
+                        <i class="fas fa-wand-magic-sparkles"></i> <span data-i18n="analyzeButton">شروع تحلیل هوشمند</span>
+                    </button>
+                </form>
+
+                <section class="card" id="statusCard">
+                    <h2 class="card-title"><i class="fas fa-list-ol"></i> <span data-i18n="progressTitle">مراحل تحلیل</span></h2>
+                    <div class="pipeline" id="pipeline"></div>
+                </section>
+            </aside>
+
+            <!-- ============ Main content ============ -->
+            <main class="content">
+                <!-- Empty state -->
+                <section class="card" id="emptyState" style="text-align:center; padding: var(--space-7);">
+                    <div class="brand-mark" style="margin:0 auto var(--space-4); width:64px; height:64px; font-size:26px;"><i class="fas fa-robot"></i></div>
+                    <h2 style="font-size:1.3rem;" data-i18n="emptyTitle">آماده تحلیل هوشمند</h2>
+                    <p style="color:var(--text-2); max-width:460px; margin:var(--space-3) auto 0;" data-i18n="emptyBody">کلید API خود را وارد کنید، ارز و مدل را انتخاب کنید و تحلیل را شروع کنید تا داشبورد کامل بازار، اندیکاتورها و گزارش هوش مصنوعی اینجا نمایش داده شود.</p>
+                </section>
+
+                <!-- Results -->
+                <div id="results" hidden>
+                    <div class="content" style="gap: var(--space-5);">
+                        <section class="stats-row" id="statsRow">
+                            <div class="card stat reveal" data-card="hero">
+                                <div class="stat-hero">
+                                    <img id="heroIcon" src="icons/crypto/bitcoin.png" alt="">
+                                    <div>
+                                        <div class="stat-label" id="heroName">Bitcoin (BTC)</div>
+                                        <div class="stat-value num" id="heroPrice">—</div>
+                                    </div>
+                                </div>
                             </div>
-                        </div>
-                    </div>
-
-                    <!-- بخش جدید برای نمایش سطوح فیبوناچی -->
-                    <div class="fibonacci-card">
-                        <h3 data-translate="fibonacciTitle">سطوح بازگشت فیبوناچی</h3>
-                        <div class="fibonacci-content" id="fibonacciContent"></div>
-                    </div>
-
-                    <!-- پیشنهاد معاملاتی -->
-                    <div class="recommendation-card">
-                        <h3 data-translate="recommendationTitle">پیشنهاد معاملاتی</h3>
-                        <div class="recommendation-content" id="recommendationContent"></div>
-                    </div>
-
-                    <!-- تحلیل کامل -->
-                    <div class="full-analysis-card">
-                        <h3 data-translate="fullAnalysisTitle">تحلیل کامل هوش مصنوعی</h3>
-                        <div class="full-analysis-content" id="fullAnalysisContent"></div>
-                    </div>
-
-                    <!-- بخش جدید برای نمایش اخبار ارزهای دیجیتال -->
-                    <div class="news-card">
-                        <h3 data-translate="newsTitle">📰 اخبار بازار کریپتو</h3>
-                        <div class="news-content" id="newsContent">
-                            <div class="loading">
-                                <i class="fas fa-spinner fa-spin"></i>
-                                <p data-translate="loadingNewsText">در حال دریافت آخرین اخبار...</p>
+                            <div class="card stat reveal" data-card="change">
+                                <div class="stat-label" data-i18n="change24h">تغییر ۲۴ ساعته</div>
+                                <div class="stat-value num" id="statChange">—</div>
+                                <div class="stat-sub num" id="statRange"></div>
                             </div>
-                        </div>
-                    </div>
+                            <div class="card stat reveal" data-card="volcap">
+                                <div class="stat-label" data-i18n="volume24h">حجم ۲۴ ساعته</div>
+                                <div class="stat-value num" id="statVolume">—</div>
+                                <div class="stat-sub num" id="statMcap"></div>
+                            </div>
+                            <div class="card stat reveal" data-card="fg">
+                                <div class="stat-label" data-i18n="fearGreed">شاخص ترس و طمع</div>
+                                <div class="stat-value num" id="fgValue">—</div>
+                                <div class="gauge"><span class="gauge-dot" id="fgDot" style="inset-inline-start:50%;"></span></div>
+                                <div class="stat-sub" id="fgText"></div>
+                            </div>
+                        </section>
 
-                    <!-- دکمه‌های عملی -->
-                    <div class="action-buttons">
-                        <button id="copyBtn" class="action-btn">
-                            <i class="fas fa-copy"></i> <span data-translate="copyButton">کپی نتایج</span>
-                        </button>
-                        <button id="downloadBtn" class="action-btn">
-                            <i class="fas fa-download"></i> <span data-translate="downloadButton">دانلود PDF</span>
-                        </button>
-                        <button id="shareBtn" class="action-btn">
-                            <i class="fas fa-share"></i> <span data-translate="shareButton">اشتراک گذاری</span>
-                        </button>
+                        <section class="card reveal" data-card="chart">
+                            <h2 class="card-title"><i class="fas fa-chart-area"></i> <span data-i18n="liveChartTitle">نمودار زنده</span>
+                                <span class="card-hint">TradingView</span></h2>
+                            <div class="chart-frame" id="liveChartContainer"></div>
+                        </section>
+
+                        <section class="card reveal" data-card="indicators">
+                            <h2 class="card-title"><i class="fas fa-calculator"></i> <span data-i18n="indicatorsTitle">شاخص‌های تکنیکال (محاسبه‌شده)</span></h2>
+                            <div class="indicator-grid" id="indicatorsGrid"></div>
+                        </section>
+
+                        <section class="card reveal" data-card="levels">
+                            <h2 class="card-title"><i class="fas fa-bullseye"></i> <span data-i18n="levelsTitle">سطوح حمایت و مقاومت</span></h2>
+                            <div id="levelsContent"></div>
+                        </section>
+
+                        <div class="two-col">
+                            <section class="card reveal" data-card="volumeprofile">
+                                <h2 class="card-title"><i class="fas fa-bars-staggered"></i> <span data-i18n="volumeProfileTitle">پروفایل حجم</span></h2>
+                                <div id="volumeProfileContent"></div>
+                            </section>
+                            <section class="card reveal" data-card="fibonacci">
+                                <h2 class="card-title"><i class="fas fa-layer-group"></i> <span data-i18n="fibonacciTitle">سطوح بازگشت فیبوناچی</span></h2>
+                                <div id="fibonacciContent"></div>
+                            </section>
+                        </div>
+
+                        <section class="card reveal" data-card="blockchain">
+                            <h2 class="card-title"><i class="fas fa-link"></i> <span data-i18n="blockchainTitle">داده‌های پیشرفته بلاکچین</span></h2>
+                            <div id="blockchainContent"></div>
+                        </section>
+
+                        <section class="card reveal" data-card="metrics">
+                            <h2 class="card-title"><i class="fas fa-gauge-high"></i> <span data-i18n="advancedMetricsTitle">متریک‌های پیشرفته شبکه</span></h2>
+                            <div id="metricsContent"></div>
+                        </section>
+
+                        <section class="card reveal" data-card="report">
+                            <h2 class="card-title"><i class="fas fa-robot"></i> <span data-i18n="fullAnalysisTitle">تحلیل کامل هوش مصنوعی</span>
+                                <span class="card-hint" id="reportModelHint"></span></h2>
+                            <div id="recoSlot"></div>
+                            <div class="report-body" id="reportContent"></div>
+                            <div class="report-toolbar">
+                                <button id="copyBtn" class="btn btn-ghost" type="button"><i class="fas fa-copy"></i> <span data-i18n="copyButton">کپی نتایج</span></button>
+                                <button id="downloadBtn" class="btn btn-ghost" type="button"><i class="fas fa-file-arrow-down"></i> <span data-i18n="downloadButton">دانلود PDF</span></button>
+                                <button id="shareBtn" class="btn btn-ghost" type="button"><i class="fas fa-share-nodes"></i> <span data-i18n="shareButton">اشتراک‌گذاری</span></button>
+                            </div>
+                        </section>
+
+                        <section class="card reveal" data-card="news">
+                            <h2 class="card-title"><i class="fas fa-newspaper"></i> <span data-i18n="newsTitle">اخبار بازار کریپتو</span>
+                                <span class="card-hint">Cointelegraph</span></h2>
+                            <div id="newsContent"></div>
+                        </section>
                     </div>
                 </div>
-            </div>
+            </main>
         </div>
+
+        <footer class="footer">
+            <a href="https://github.com/imotb/ai-crypto-analysis" target="_blank" rel="noopener"><i class="fab fa-github"></i> Developed by imotb</a>
+            <span data-i18n="disclaimer">تحلیل‌ها صرفاً جنبه آموزشی دارند و توصیه مالی نیستند.</span>
+        </footer>
     </div>
-    <!-- Add this before the closing </div> of the container -->
-    <footer class="footer">
-        <div class="footer-content">
-            <div class="footer-github">
-                <a href="https://github.com/imotb" target="_blank">
-                    <i class="fab fa-github"></i>
-                    Developed by imotb
-                </a>
-                <span class="alterday-text">Amirreza is Best</span>
-            </div>
-        </div>
-    </footer>
-    <script src="script.js"></script>
+
+    <div class="toast-stack" id="toastStack" aria-live="polite"></div>
+
+    <noscript data-i18n-noscript>This dashboard requires JavaScript.</noscript>
 </body>
 </html>
-
