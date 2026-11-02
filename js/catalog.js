@@ -3,6 +3,7 @@
 export const MODELS = [
   { id: 'openrouter/free', label: 'Free Models Router (Free)', icon: 'icons/ai/router.png', paid: false },
   { id: 'nvidia/nemotron-3-ultra-550b-a55b:free', label: 'Nemotron3 Ultra (Free)', icon: 'icons/ai/nvidia.png', paid: false },
+  { id: 'nvidia/nemotron-3.5-super-vl:free', label: 'Nemotron3.5 Super VL (free)', icon: 'icons/ai/nvidia.png', paid: false },
   { id: 'nvidia/nemotron-3.5-lightning:free', label: 'Nemotron3.5 Lightning (Free)', icon: 'icons/ai/nvidia.png', paid: false },
   { id: 'thinkingmachines/inkling:free', label: 'Inkling (Free)', icon: 'icons/ai/Inkling.png', paid: false },
   { id: 'cohere/north-mini-code:free', label: 'North Mini Code (Free)', icon: 'icons/ai/Cohere.png', paid: false },
@@ -11,18 +12,21 @@ export const MODELS = [
   { id: 'recursive/flint-v1.0:free', label: 'Recursive Flint (Free)', icon: 'icons/ai/Recursive.png', paid: false },
   { id: 'liquid/lfm-2.5-2.6b:free', label: 'LFM2.5-2.6B (Free)', icon: 'icons/ai/Liquid.png', paid: false },
   { id: 'xingchen-agi/xing4.0-29b-a4b:free', label: 'Xing4.0 29B A4B (Free)', icon: 'icons/ai/XingChen.png', paid: false },
+  { id: 'dots-studio/dots-3-note-preview:free', label: 'Dots3-Note Preview (free)', icon: 'icons/ai/DotsStudio.png', paid: false },
   { id: 'openrouter/auto', label: 'Auto Router', icon: 'icons/ai/router.png', paid: true },
   { id: '~deepseek/deepseek-pro-latest', label: 'DeepSeek Pro Latest', icon: 'icons/ai/deepseek.png', paid: true },
   { id: '~deepseek/deepseek-flash-latest', label: 'DeepSeek Flash Latest', icon: 'icons/ai/deepseek.png', paid: true },
   { id: '~openai/gpt-luna-latest', label: 'GPT Luna Latest', icon: 'icons/ai/openai.png', paid: true },
   { id: 'openai/gpt-oss-120b', label: 'GPT OSS 120b', icon: 'icons/ai/openai.png', paid: true },
   { id: '~anthropic/claude-opus-latest', label: 'Claude Opus Latest', icon: 'icons/ai/claude.png', paid: true },
+  { id: 'anthropic/claude-haiku-5.5', label: 'Claude Haiku 5.5', icon: 'icons/ai/claude.png', paid: true },
   { id: '~z-ai/glm-latest', label: 'GLM Latest', icon: 'icons/ai/zai.png', paid: true },
   { id: '~z-ai/glm-flash-latest', label: 'GLM Flash Latest', icon: 'icons/ai/zai.png', paid: true },
   { id: '~google/gemini-pro-latest', label: 'Gemini Pro Latest', icon: 'icons/ai/gemini.png', paid: true },
   { id: '~google/gemini-flash-latest', label: 'Gemini Flash Latest', icon: 'icons/ai/gemini.png', paid: true },
   { id: '~moonshotai/kimi-latest', label: 'Kimi Latest', icon: 'icons/ai/MoonshotAI.png', paid: true },
   { id: '~x-ai/grok-latest', label: 'Grok Latest', icon: 'icons/ai/grok.png', paid: true },
+  { id: 'minimax/minimax-m3.1-flash', label: 'MiniMax M3.1 Flash', icon: 'icons/ai/minimax.png', paid: true },
   { id: 'qwen/qwen3.8-max-0902', label: 'Qwen3.8 Max', icon: 'icons/ai/qwen.png', paid: true },
   { id: 'qwen/qwen3.8-flash', label: 'Qwen3.8 Flash', icon: 'icons/ai/qwen.png', paid: true },
 ];
@@ -143,6 +147,13 @@ export const CRYPTOS = [
   { c: 'broadcom-xstock', t: 'AVGOX', i: 'broadcom-xstock', en: 'Broadcom xStock', fa: 'برادکام استاک', cg: 'broadcom-xstock', cp: 'avgox-broadcom-tokenized-stock-xstock', tv: 'GATEIO:AVGOXUSDT' },
   { c: 'crowdstrike-xstock', t: 'CRWDX', i: 'crowdstrike-xstock', en: 'CrowdStrike xStock', fa: 'کراوداسترایک استاک', cg: 'crowdstrike-xstock', cp: 'crwdx-crowdstrike-tokenized-stock-xstock', tv: 'GATEIO:CRWDXUSDT' },
   { c: 'amazon-xstock', t: 'AMZNX', i: 'amazon-xstock', en: 'Amazon xStock', fa: 'آمازون استاک', cg: 'amazon-xstock', cp: 'amznx-amazon-tokenized-stock-xstock', tv: 'GATEIO:AMZNXUSDT' },
+  /* Tokenized Take-Two — issued by Backpack Securities, NOT a Backed xStock:
+     Backed's TTWOx (take-two-interactive-software-xstock) is a dead CoinGecko
+     listing (empty simple/price, 0 market_chart points) with no exchange pair,
+     so it would fail all three price sources. `cp` is null because CoinPaprika
+     has no tokenized TTWO at all, and no crypto venue lists a TTWO pair on
+     TradingView, so the chart falls back to the NASDAQ underlying. */
+  { c: 'take-two-interactive-software-backpack-securities', t: 'TTWO', i: 'TTWO', en: 'Take-Two Interactive (Tokenized)', fa: 'تیک-تو اینتراکتیو استاک', cg: 'take-two-interactive-software-backpack-securities', cp: null, tv: 'NASDAQ:TTWO' },
 ];
 
 export function cryptoInfo(slug, language) {
