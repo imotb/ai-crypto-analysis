@@ -9,7 +9,7 @@
 - **🔍 شناسایی خودکار:** تشخیص سطوح حمایت و مقاومت، الگوهای قیمتی و سیگنال‌های خرید یا فروش.
 - **🎯 شاخص‌ها:** دریافت لحظه‌ای شاخص ترس و طمع، میانگین‌های متحرک، RSI و MACD.
 - **🛠 رابط کاربری ساده:** استفاده آسان بدون نیاز به نصب یا دانش فنی. تنها چیزی که نیاز دارید یک کلید API است.
-- **💰 پشتیبانی از ارزهای مختلف:** تقریباً تمام ارزهای دیجیتال محبوب جهان (مانند BTC، ETH، ADA، SOL و…) را تحلیل کنید.
+- **💰 پشتیبانی از ارزهای مختلف:** تقریباً تمام ارزهای دیجیتال محبوب جهان (مانند BTC، ETH، ADA، SOL و…) به‌علاوه سهام توکنی‌شده (xStock) را تحلیل کنید.
 - **👽 پشتیبانی از LLMهای متنوع:** امکان انتخاب بین مدل‌های مختلف هوش مصنوعی مانند DeepSeek، GPT-OSS، Grok و…
 
 ---
@@ -18,7 +18,7 @@
 - **🌐 دوزبانه کامل (فارسی/انگلیسی):** پشتیبانی همزمان RTL و LTR با یک دکمه؛ نام ارز، عنوان صفحه و همه نماها با تغییر زبان دوباره رندر می‌شوند.
 - **📊 اندیکاتورهای پیشرفته:** علاوه بر RSI و MACD، حالا بانجر، استوکاستیک، ADX، ATR، OBV، VWAP، ایچیموکو، فیبوناچی و Volume Profile هم محاسبه می‌شود.
 - **🔗 منبع داده سه‌لایه:** Binance → CoinGecko → CoinPaprika با خطایابی خودکار (رفع مشکل CORS بایننس).
-- **🧩 ماژولار:** کد از یک فایل ۳۹۱۶ خطی به ۱۴ ماژول ES مجزا (سرویس‌ها، تحلیل، UI) تبدیل شد؛ jQuery و Select2 حذف شدند و جای خود را به یک کمبوکس جستجوپذیر و دسترس‌پذیر دادند.
+- **🧩 ماژولار:** پیش از این بازطراحی، همه منطق پروژه در یک فایل `script.js` به طول ۳۹۱۶ خط جمع شده بود؛ آن فایل نسل اول (legacy) حالا حذف شده و دیگر در ریپو قرار ندارد. کد فعلی به ۱۴ ماژول ES مجزا (سرویس‌ها، تحلیل، UI) تقسیم شده و jQuery و Select2 حذف شدند؛ جای آن‌ها یک کمبوکس جستجوپذیر و دسترس‌پذیر نشسته است.
 - **🔒 امنیت و پایداری:** کلید API فقط از فیلد «کلید API OpenRouter» در رابط کاربری خوانده و در همان مرورگر ذخیره می‌شود (هیچ کلیدی در کد یا ریپو نیست)؛ خروجی هوش مصنوعی با DOMPurify پاک‌سازی می‌شود، همه درخواست‌ها تایم‌اوت دارند و خطاهای OpenRouter به‌دقت مدیریت می‌شوند (کلید نامعتبر / اعتبار ناکافی / محدودیت نرخ).
 
 ---
@@ -63,7 +63,7 @@ This panel is completely free and available via GitHub Pages; it does not requir
 - **🔍 Automatic detection:** Detect support and resistance levels, price patterns and buy/sell signals.
 - **🎯 Indicators:** Instant Fear & Greed index, moving averages, RSI and MACD.
 - **🛠 Simple interface:** Easy to use with no installation or technical knowledge. All you need is an API key.
-- **💰 Broad coin coverage:** Analyse almost all of the world's popular cryptocurrencies (BTC, ETH, ADA, SOL, etc.).
+- **💰 Broad asset coverage:** Analyse almost all of the world's popular cryptocurrencies (BTC, ETH, ADA, SOL, etc.) plus tokenized stocks (xStock).
 - **👽 Many LLMs:** Choose between different AI models such as DeepSeek, GPT-OSS, Grok, etc.
 
 ---
@@ -72,7 +72,7 @@ This panel is completely free and available via GitHub Pages; it does not requir
 - **🌐 Fully bilingual (Persian/English):** Simultaneous RTL and LTR support with a single toggle — coin names, the page title and every view re-render on switch.
 - **📊 Advanced indicators:** Beyond RSI and MACD, it now computes Bollinger Bands, Stochastic, ADX, ATR, OBV, VWAP, Ichimoku, Fibonacci retracement and Volume Profile (POC/VAH/VAL).
 - **🔗 Three-layer data fallback:** Binance → CoinGecko → CoinPaprika with automatic degradation (fixes Binance browser CORS blocking).
-- **🧩 Modular architecture:** The 3,916-line monolith was split into 14 ES modules (services / analysis / UI). jQuery and Select2 were removed and replaced with an accessible, searchable custom combobox.
+- **🧩 Modular architecture:** Before this redesign all logic lived in a single legacy `script.js` of 3,916 lines. That first-generation file has since been deleted and no longer ships in the repository — what exists today is 14 small ES modules (services / analysis / UI). jQuery and Select2 were removed as well and replaced with an accessible, searchable custom combobox.
 - **🔒 Security & robustness:** The API key is read only from the "OpenRouter API Key" field in the UI and persisted in your own browser — no key is ever shipped in code or the repository. AI markdown is sanitized with DOMPurify, every request has an AbortController timeout, and OpenRouter failures are mapped to precise, localized errors (INVALID_KEY / NO_CREDITS / RATE_LIMIT).
 
 ---
@@ -84,7 +84,7 @@ js/
   main.js               orchestrator: state + 5-step analysis pipeline
   config.js             guarded localStorage persistence (API key / theme / language)
   i18n.js               Persian & English dictionaries + localized chrome (title, aria-labels)
-  catalog.js            24 AI models, 113 cryptocurrencies
+  catalog.js            24 AI models, 114 assets (cryptocurrencies + tokenized stocks)
   services/
     http.js             fetchJson with AbortController timeouts + non-JSON 200 guard
     market.js           price + klines: Binance (data-api.binance.vision) → CoinGecko → CoinPaprika
