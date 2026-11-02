@@ -126,7 +126,12 @@ function formatPrice(price, symbol) {
 
 // تابع کمکی برای فرمت‌بندی اعداد بزرگ
 function formatNumber(num) {
-    if (num >= 1000000000) {
+    // Small-cap tokenized stocks reach this as low as ~$1M; hardcoding a /1e9
+    // "B" suffix rendered them as $0.0B and told the model the asset was dead.
+    if (num === null || num === undefined || isNaN(num)) return '0';
+    if (num >= 1000000000000) {
+        return (num / 1000000000000).toFixed(2) + 'T';
+    } else if (num >= 1000000000) {
         return (num / 1000000000).toFixed(2) + 'B';
     } else if (num >= 1000000) {
         return (num / 1000000).toFixed(2) + 'M';
@@ -158,6 +163,12 @@ function getRSIInterpretation(rsi, language) {
 }
 
 function getFearGreedText(index, language) {
+    /* With no index every comparison is false and the old code fell through to
+       the *worst* label ("Extreme Fear"), telling the model the market was
+       panicking when the data was simply missing. */
+    if (index === null || index === undefined || isNaN(index)) {
+        return language === 'fa' ? 'نامشخص' : 'Unknown';
+    }
     if (language === 'fa') {
         if (index > 75) return 'طمع شدید';
         if (index > 50) return 'طمع';
@@ -287,8 +298,8 @@ export function buildPrompt({ cryptoInfo, cryptoData, analysisType, language }) 
     📊 **داده‌های لحظه‌ای و واقعی:**
     - قیمت فعلی: $${formattedPrice}
     - تغییر قیمت ۲۴ ساعته: ${cryptoData.priceChange24h.toFixed(2)}%
-    - حجم معاملات ۲۴ ساعته: $${(cryptoData.volume24h / 1000000000).toFixed(1)}B
-    - ارزش بازار: $${(cryptoData.marketCap / 1000000000).toFixed(1)}B
+    - حجم معاملات ۲۴ ساعته: $${formatNumber(cryptoData.volume24h)}
+    - ارزش بازار: $${formatNumber(cryptoData.marketCap)}
     - عرضه در گردش: ${cryptoData.circulatingSupply ? cryptoData.circulatingSupply.toLocaleString() : 'نامشخص'}
 
     🎯 **شاخص‌های تکنیکال پیشرفته:**
@@ -327,7 +338,7 @@ export function buildPrompt({ cryptoInfo, cryptoData, analysisType, language }) 
     - Value Area Low (VAL): $${formatPrice(indicators.volumeProfile.val, cryptoInfo.symbol)}
 
     🧠 **شاخص احساسات بازار:**
-    - شاخص ترس و طمع: ${cryptoData.fearGreedIndex} (${getFearGreedText(cryptoData.fearGreedIndex, language)})
+    - شاخص ترس و طمع: ${cryptoData.fearGreedIndex ?? na} (${getFearGreedText(cryptoData.fearGreedIndex, language)})
 
     **توجه بسیار مهم:** این تحلیل در تاریخ ${timeContext.currentDate} و ساعت ${timeContext.currentTime} انجام شده است. لطفاً تحلیل خود را کاملاً بر اساس شرایط فعلی بازار و داده‌های ارائه شده در این تاریخ انجام دهید. از اشاره به رویدادها یا شرایط تاریخی گذشته خودداری کنید.
 
@@ -383,8 +394,8 @@ export function buildPrompt({ cryptoInfo, cryptoData, analysisType, language }) 
     📊 **داده‌های لحظه‌ای و واقعی:**
     - قیمت فعلی: $${formattedPrice}
     - تغییر قیمت ۲۴ ساعته: ${cryptoData.priceChange24h.toFixed(2)}%
-    - حجم معاملات ۲۴ ساعته: $${(cryptoData.volume24h / 1000000000).toFixed(1)}B
-    - ارزش بازار: $${(cryptoData.marketCap / 1000000000).toFixed(1)}B
+    - حجم معاملات ۲۴ ساعته: $${formatNumber(cryptoData.volume24h)}
+    - ارزش بازار: $${formatNumber(cryptoData.marketCap)}
     - عرضه در گردش: ${cryptoData.circulatingSupply ? cryptoData.circulatingSupply.toLocaleString() : 'نامشخص'}
     - حداکثر عرضه: ${cryptoData.maxSupply ? cryptoData.maxSupply.toLocaleString() : 'نامشخص'}
 
@@ -420,7 +431,7 @@ export function buildPrompt({ cryptoInfo, cryptoData, analysisType, language }) 
     ).join(', ')}
 
     🧠 **شاخص‌های کلان بازار:**
-    - شاخص ترس و طمع: ${cryptoData.fearGreedIndex} (${getFearGreedText(cryptoData.fearGreedIndex, language)})
+    - شاخص ترس و طمع: ${cryptoData.fearGreedIndex ?? na} (${getFearGreedText(cryptoData.fearGreedIndex, language)})
     - دامیننس بیت‌کوین: N/A (داده در دسترس نیست)
 
     **توجه بسیار مهم:** این تحلیل در تاریخ ${timeContext.currentDate} و ساعت ${timeContext.currentTime} انجام شده است. لطفاً تحلیل بلندمدت خود را با توجه به شرایط فعلی بازار و چشم‌انداز آینده بر اساس وضعیت کنونی ارائه دهید.
@@ -487,8 +498,8 @@ export function buildPrompt({ cryptoInfo, cryptoData, analysisType, language }) 
     📊 **Real-time Data:**
     - Current price: $${formattedPrice}
     - 24h price change: ${cryptoData.priceChange24h.toFixed(2)}%
-    - 24h trading volume: $${(cryptoData.volume24h / 1000000000).toFixed(1)}B
-    - Market cap: $${(cryptoData.marketCap / 1000000000).toFixed(1)}B
+    - 24h trading volume: $${formatNumber(cryptoData.volume24h)}
+    - Market cap: $${formatNumber(cryptoData.marketCap)}
     - Circulating supply: ${cryptoData.circulatingSupply ? cryptoData.circulatingSupply.toLocaleString() : 'Unknown'}
 
     🎯 **Advanced Technical Indicators:**
@@ -527,7 +538,7 @@ export function buildPrompt({ cryptoInfo, cryptoData, analysisType, language }) 
     - Value Area Low (VAL): $${formatPrice(indicators.volumeProfile.val, cryptoInfo.symbol)}
 
     🧠 **Market Sentiment:**
-    - Fear & Greed Index: ${cryptoData.fearGreedIndex} (${getFearGreedText(cryptoData.fearGreedIndex, language)})
+    - Fear & Greed Index: ${cryptoData.fearGreedIndex ?? na} (${getFearGreedText(cryptoData.fearGreedIndex, language)})
 
     **CRITICAL NOTE:**
     This analysis was performed on ${timeContext.currentDate} at ${timeContext.currentTime}. Please provide your analysis entirely based on current market conditions and data as of this date. Do not refer to past historical events or conditions.
@@ -584,8 +595,8 @@ export function buildPrompt({ cryptoInfo, cryptoData, analysisType, language }) 
     📊 **Real-time Data:**
     - Current price: $${formattedPrice}
     - 24h price change: ${cryptoData.priceChange24h.toFixed(2)}%
-    - 24h trading volume: $${(cryptoData.volume24h / 1000000000).toFixed(1)}B
-    - Market cap: $${(cryptoData.marketCap / 1000000000).toFixed(1)}B
+    - 24h trading volume: $${formatNumber(cryptoData.volume24h)}
+    - Market cap: $${formatNumber(cryptoData.marketCap)}
     - Circulating supply: ${cryptoData.circulatingSupply ? cryptoData.circulatingSupply.toLocaleString() : 'Unknown'}
     - Max supply: ${cryptoData.maxSupply ? cryptoData.maxSupply.toLocaleString() : 'Unknown'}
 
@@ -621,7 +632,7 @@ export function buildPrompt({ cryptoInfo, cryptoData, analysisType, language }) 
     ).join(', ')}
 
     🧠 **Macro Market Indicators:**
-    - Fear & Greed Index: ${cryptoData.fearGreedIndex} (${getFearGreedText(cryptoData.fearGreedIndex, language)})
+    - Fear & Greed Index: ${cryptoData.fearGreedIndex ?? na} (${getFearGreedText(cryptoData.fearGreedIndex, language)})
     - Bitcoin Dominance: N/A (Data not available)
 
     **CRITICAL NOTE:**
