@@ -615,6 +615,22 @@ html[data-theme='dark'] .combo-pop {
 .error-actions { display: flex; gap: var(--space-3); }
 .error-tips { text-align: start; font-size: .78rem; color: var(--text-3); background: var(--glass-2); padding: var(--space-3) var(--space-4); border-radius: var(--radius-sm); border: 1px solid var(--border); }
 
+/* "Not applicable" state — informational, deliberately NOT the red error look,
+   so unsupported assets don't read as a failure. */
+.na-panel {
+  display: flex; align-items: flex-start; gap: var(--space-3);
+  padding: var(--space-4);
+  border-radius: var(--radius-md);
+  background: var(--glass-2);
+  border: 1px dashed var(--border-strong);
+  color: var(--text-2);
+  font-size: .8rem;
+  line-height: 1.7;
+}
+.na-panel i { color: var(--text-3); font-size: .95rem; margin-top: 3px; flex: none; }
+.na-panel b { color: var(--text); font-weight: 600; }
+.kv .v.num.na { color: var(--text-3); font-weight: 500; }
+
 /* ---------- Footer ---------- */
 .footer { margin-top: var(--space-7); padding-top: var(--space-5); border-top: 1px solid var(--border); display: flex; justify-content: space-between; gap: var(--space-3); flex-wrap: wrap; font-size: .78rem; color: var(--text-3); }
 .footer a { color: var(--text-2); }
