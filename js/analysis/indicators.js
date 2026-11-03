@@ -7,7 +7,7 @@ export function formatCalculationNumber(num) {
   const number = Number(num);
   if (isNaN(number)) return 0;
   if (number === 0) return 0;
-  if (Math.abs(number) < 0.000001) return parseFloat(number.toFixed(10));
+  if (Math.abs(number) < 0.000001) return parseFloat(number.toPrecision(6));
   if (Math.abs(number) < 0.001) return parseFloat(number.toFixed(8));
   if (Math.abs(number) < 0.1) return parseFloat(number.toFixed(6));
   return parseFloat(number.toFixed(4));
@@ -207,17 +207,25 @@ export function calculateVolumeProfile(prices, volumes, bins = 20) {
     }
     levels.push({ price: formatCalculationNumber((lo + hi) / 2), volume: vol });
   }
-  levels.sort((a, b) => b.volume - a.volume);
-  const poc = levels.length ? levels[0].price : 0;
+  /* The value area is the set of bins holding 70% of volume, ranked by volume —
+     but VAH/VAL are the price *extremes* of that set. Walking the volume ranking
+     and keeping the first/last visited price made VAL regularly exceed VAH, and
+     `if (vah === 0)` also mis-handled a legitimate zero-priced first bin. */
+  const byVolume = [...levels].sort((a, b) => b.volume - a.volume);
+  const poc = byVolume.length ? byVolume[0].price : 0;
   const total = levels.reduce((s, l) => s + l.volume, 0);
   const target = total * 0.7;
-  let acc = 0, vah = 0, val = 0;
-  for (const level of levels) {
+  const area = [];
+  let acc = 0;
+  for (const level of byVolume) {
+    area.push(level.price);
     acc += level.volume;
-    if (vah === 0) vah = level.price;
-    val = level.price;
     if (acc >= target) break;
   }
+  const vah = area.length ? Math.max(...area) : 0;
+  const val = area.length ? Math.min(...area) : 0;
+  /* Returned ladder stays in price order (high → low) for the UI. */
+  levels.sort((a, b) => b.price - a.price);
   return { levels, poc, vah, val };
 }
 

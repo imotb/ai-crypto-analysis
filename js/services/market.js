@@ -139,18 +139,43 @@ export async function fetchHistoricalData(cryptoInfo) {
   }));
 }
 
-/* Fill gaps (marketCap etc.) from CoinGecko without failing the pipeline. */
+/* Fill gaps (marketCap, supply, ATH/ATL, rank) from CoinGecko without failing
+   the pipeline. /coins/markets answers price + market cap + supply in a single
+   call, so it replaces the older simple/price round-trip when it succeeds. */
 export async function enrichFromCoinGecko(cryptoInfo, quote) {
-  if (quote.marketCap != null && quote.source === 'coingecko') return quote;
   try {
-    const gecko = await fromCoinGecko(cryptoInfo);
+    const rows = await fetchJson(
+      `https://api.coingecko.com/api/v3/coins/markets?vs_currency=usd&ids=${encodeURIComponent(cryptoInfo.coingeckoId)}`,
+      { timeoutMs: 10000 },
+    );
+    const row = Array.isArray(rows) ? rows[0] : null;
+    if (!row) throw new Error('CoinGecko markets returned no row');
     return {
       ...quote,
-      marketCap: quote.marketCap ?? gecko.marketCap,
-      priceChange24h: quote.priceChange24h ?? gecko.priceChange24h,
-      volume24h: quote.volume24h ?? gecko.volume24h,
+      price: quote.price ?? row.current_price,
+      priceChange24h: quote.priceChange24h ?? row.price_change_percentage_24h,
+      volume24h: quote.volume24h ?? row.total_volume,
+      marketCap: quote.marketCap ?? row.market_cap,
+      circulatingSupply: row.circulating_supply ?? null,
+      maxSupply: row.max_supply ?? null,
+      ath: row.ath ?? null,
+      atl: row.atl ?? null,
+      marketCapRank: row.market_cap_rank ?? null,
     };
-  } catch {
-    return quote;
+  } catch (e) {
+    console.warn('CoinGecko enrichment unavailable:', e.message);
+    /* Fall back to the narrow endpoint so a markets-API hiccup still yields a
+       market cap rather than the "—" the old code produced. */
+    try {
+      const gecko = await fromCoinGecko(cryptoInfo);
+      return {
+        ...quote,
+        marketCap: quote.marketCap ?? gecko.marketCap,
+        priceChange24h: quote.priceChange24h ?? gecko.priceChange24h,
+        volume24h: quote.volume24h ?? gecko.volume24h,
+      };
+    } catch {
+      return quote;
+    }
   }
 }

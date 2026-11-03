@@ -1,33 +1,8 @@
 import { T } from '../i18n.js';
+import { formatPrice } from '../format.js';
 import { skeletonLines, skeletonBlock, attachIconFallback } from './fx.js';
 
 /* ---------- formatting ---------- */
-
-export function formatSmallNumber(num) {
-  if (num === undefined || num === null || isNaN(num)) return '0';
-  const n = Number(num);
-  if (isNaN(n) || n === 0) return '0';
-  if (n >= 0.01) return n.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 6 });
-  if (n >= 0.0001) return n.toLocaleString(undefined, { minimumFractionDigits: 4, maximumFractionDigits: 8 });
-  return n.toFixed(10).replace(/\.?0+$/, '');
-}
-
-export function formatPrice(price, symbol) {
-  if (price === undefined || price === null || isNaN(price)) return '0.00';
-  const n = Number(price);
-  if (isNaN(n)) return '0.00';
-  const low = ['SHIB', 'PEPE', 'DOGE', 'XLM', 'FLOKI', 'BABYDOGE'];
-  if (low.includes(symbol)) {
-    if (n < 0.0001) return n.toFixed(8);
-    if (n < 0.01) return n.toFixed(6);
-  }
-  if (n < 1) return n.toFixed(4);
-  try {
-    return n.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 6 });
-  } catch {
-    return n.toFixed(2);
-  }
-}
 
 export function formatCompact(usd) {
   if (usd == null || isNaN(usd)) return '—';
@@ -159,7 +134,7 @@ export function renderStats({ quote, cryptoInfo, fearGreed }, lang) {
 
   const hp = $('heroPrice');
   hp.classList.remove('sk');
-  setText(hp, `$${formatPrice(quote.price, cryptoInfo.symbol)}`);
+  setText(hp, `$${formatPrice(quote.price)}`);
   setText($('heroName'), `${cryptoInfo.name} (${cryptoInfo.symbol})`);
   const icon = $('heroIcon');
   attachIconFallback(icon, cryptoInfo.symbol);
@@ -193,7 +168,11 @@ export function renderStats({ quote, cryptoInfo, fearGreed }, lang) {
 /* Indicators can legitimately be null (not enough history for SMA 200, etc.).
    Rendering them as 0 invented a reading; "—" is the honest display. */
 function fmtNum(v) {
-  return v === null || v === undefined || Number.isNaN(v) ? '—' : String(v);
+  if (v === null || v === undefined || Number.isNaN(v)) return '—';
+  const n = Number(v);
+  /* Chip values are raw indicator outputs; String() renders 3.13e-10 as
+     "3.13203e-10", so sub-1 prices go through the shared formatter instead. */
+  return Number.isFinite(n) && n !== 0 && Math.abs(n) < 1 ? formatPrice(n) : String(v);
 }
 
 function chip(name) {
@@ -310,26 +289,72 @@ export function renderFibonacci(fib, currentPrice, lang) {
 
 /* ---------- blockchain / metrics ---------- */
 
-export function renderBlockchain(bc, lang, helpers) {
-  if (!bc || Object.values(bc).every(v => v == null)) { cardFallback('blockchainContent', T[lang].noData); return; }
+/* Informational "not applicable" state — used when a metric/section is not
+   meaningful for this asset, as opposed to a fetch that actually failed. */
+export function cardNotApplicable(containerId, reason) {
+  const el = $(containerId);
+  if (!el) return;
+  el.innerHTML = '';
+  const box = document.createElement('div');
+  box.className = 'na-panel';
+  box.innerHTML = '<i class="fas fa-circle-info" aria-hidden="true"></i><p></p>';
+  box.querySelector('p').textContent = reason;
+  el.append(box);
+}
+
+export function renderBlockchain(bc, lang, helpers, support) {
+  const dict = T[lang];
+  /* No free source exposes chain stats for this asset (TRON, xStocks, PoS alts):
+     say so once instead of painting five dashes. */
+  if (support && !support.hasChainStats) {
+    cardNotApplicable('blockchainContent', dict.bcNotSupported);
+    return;
+  }
+  if (!bc || Object.values(bc).every(v => v == null)) { cardFallback('blockchainContent', dict.noData); return; }
   const cell = (k, v, sub = '') => `<div class="kv"><div class="k">${k}</div><div class="v num">${v ?? '—'}</div>${sub ? `<div class="s ${sub}"></div>` : ''}</div>`;
   setHTML($('blockchainContent'), `<div class="kv-grid">${[
-    cell(T[lang].networkDifficulty, bc.networkDifficulty != null ? Number(bc.networkDifficulty).toExponential(2) : '—'),
-    cell(T[lang].hashRate, bc.hashRate != null ? helpers.formatHashRate(bc.hashRate) : '—'),
-    cell(T[lang].transactionCount, bc.transactionCount != null ? Number(bc.transactionCount).toLocaleString() : '—'),
-    cell(T[lang].activeAddresses, bc.activeAddresses != null ? Number(bc.activeAddresses).toLocaleString() : '—'),
-    cell(T[lang].transactionVolume, bc.transactionVolume != null ? formatCompact(bc.transactionVolume) : '—'),
+    cell(dict.networkDifficulty, bc.networkDifficulty != null ? Number(bc.networkDifficulty).toExponential(2) : '—'),
+    cell(dict.hashRate, bc.hashRate != null ? helpers.formatHashRate(bc.hashRate) : '—'),
+    cell(dict.transactionCount, bc.transactionCount != null ? Number(bc.transactionCount).toLocaleString() : '—'),
+    cell(dict.activeAddresses, bc.activeAddresses != null ? Number(bc.activeAddresses).toLocaleString() : '—'),
+    cell(dict.transactionVolume, bc.transactionVolume != null ? formatCompact(bc.transactionVolume) : '—'),
   ].join('')}</div>`);
 }
 
 export function renderMetrics(m, lang, helpers) {
-  if (!m) { cardFallback('metricsContent', T[lang].noData); return; }
-  const cell = (k, v, cls, desc) => `<div class="kv"><div class="k">${k}</div><div class="v num ${cls}">${v}</div><div class="s" style="color:var(--text-3)">${desc}</div></div>`;
-  setHTML($('metricsContent'), `<div class="kv-grid">${[
-    cell(T[lang].nvtRatio, m.nvtRatio ?? '—', helpers.getMetricClass(m.nvtRatio, 'nvt'), helpers.getNVTDescription(m.nvtRatio, lang)),
-    cell(T[lang].mayerMultiple, m.mayerMultiple ?? '—', helpers.getMetricClass(m.mayerMultiple, 'mayer'), helpers.getMayerDescription(m.mayerMultiple, lang)),
-    cell(T[lang].puellMultiple, m.puellMultiple ?? '—', helpers.getMetricClass(m.puellMultiple, 'puell'), helpers.getPuellDescription(m.puellMultiple, lang)),
-  ].join('')}</div>`);
+  const dict = T[lang];
+  if (!m) { cardFallback('metricsContent', dict.noData); return; }
+  const sup = m.onchainSupport || {};
+  const rows = [
+    {
+      label: dict.nvtRatio, value: m.nvtRatio, clsKey: 'nvt',
+      note: m.nvtRatio != null ? helpers.getNVTDescription(m.nvtRatio, lang)
+        : (sup.supportsNVT ? dict.noData : dict.nvtNotSupported),
+    },
+    {
+      label: dict.mayerMultiple, value: m.mayerMultiple, clsKey: 'mayer',
+      note: m.mayerMultiple != null ? helpers.getMayerDescription(m.mayerMultiple, lang)
+        : dict.mayerNeedsHistory,
+    },
+    {
+      label: dict.puellMultiple, value: m.puellMultiple, clsKey: 'puell',
+      note: m.puellMultiple != null ? helpers.getPuellDescription(m.puellMultiple, lang)
+        : (sup.supportsPuell ? dict.noData : dict.puellNotSupported),
+    },
+  ];
+  /* Nothing derivable at all → one explanation beats three "—" tiles. */
+  if (rows.every(r => r.value == null)) {
+    cardNotApplicable('metricsContent', `${dict.notApplicable}: ${rows.map(r => r.note).join(' ')}`);
+    return;
+  }
+  const cell = (r) => `<div class="kv"><div class="k">${r.label}</div><div class="v num ${r.value == null ? 'na' : helpers.getMetricClass(r.value, r.clsKey)}"></div><div class="s" style="color:var(--text-3)"></div></div>`;
+  setHTML($('metricsContent'), `<div class="kv-grid">${rows.map(r => cell(r)).join('')}</div>`);
+  const cells = $('metricsContent').querySelectorAll('.kv');
+  rows.forEach((r, i) => {
+    const vEl = cells[i].querySelector('.v');
+    vEl.textContent = r.value == null ? '—' : r.value.toFixed(2);
+    cells[i].querySelector('.s').textContent = r.note;
+  });
 }
 
 /* ---------- news ---------- */

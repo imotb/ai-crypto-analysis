@@ -2,14 +2,16 @@ import { HttpError } from './http.js';
 
 const ENDPOINT = 'https://openrouter.ai/api/v1/chat/completions';
 
-/* FIX vs legacy: on HTTP errors the OpenRouter response body (which carries the
-   real reason — invalid key / 429 / no credits / model not found) is now parsed
-   and surfaced instead of a generic "API connection error". Also guards against
-   200 responses that contain an `error` field or a null message.content, and
-   adds the recommended HTTP-Referer / X-Title attribution headers. */
-export async function runAIAnalysis({ apiKey, model, prompt, signal }) {
-  if (!apiKey) throw new Error('NO_API_KEY');
+/* Long analytical reports overflow a single completion. 8192 is the highest
+   budget every catalog model accepts — free tiers commonly cap at 4096–8192 and
+   asking for 16384 makes OpenRouter answer 400 ("max_tokens is too large"),
+   which would lose the report entirely. Truncation is handled by continuing
+   instead of by raising this number. */
+const MAX_OUTPUT_TOKENS = 8192;
+const MAX_CONTINUATIONS = 2;
+const CONTINUE_PROMPT = 'Continue from exactly where you left off. Do not repeat text already produced. Output only the remaining part of the report.';
 
+async function postChat({ apiKey, model, messages, signal }) {
   let res;
   try {
     res = await fetch(ENDPOINT, {
@@ -23,9 +25,9 @@ export async function runAIAnalysis({ apiKey, model, prompt, signal }) {
       },
       body: JSON.stringify({
         model,
-        messages: [{ role: 'user', content: prompt }],
-        max_tokens: 8192,
-        temperature: 0.7,
+        messages,
+        max_tokens: MAX_OUTPUT_TOKENS,
+        temperature: 0.3,
       }),
     });
   } catch (e) {
@@ -54,17 +56,53 @@ export async function runAIAnalysis({ apiKey, model, prompt, signal }) {
   }
 
   const choice = data.choices?.[0];
-  const content = choice?.message?.content;
-  if (!content || !content.trim()) {
-    throw new Error('AI model returned an empty response. Try another model.');
+  return {
+    content: choice?.message?.content || '',
+    finishReason: choice?.finish_reason,
+  };
+}
+
+/* Returns { text, truncated } — truncated is true only when the report could
+   not be finished after MAX_CONTINUATIONS automatic resumes, so the caller can
+   attach its own localized notice (this service has no dictionary). */
+export async function runAIAnalysis({ apiKey, model, prompt, signal }) {
+  if (!apiKey) throw new Error('NO_API_KEY');
+
+  const messages = [{ role: 'user', content: prompt }];
+  let text = '';
+  let truncated = false;
+
+  for (let turn = 0; turn <= MAX_CONTINUATIONS; turn++) {
+    let part;
+    try {
+      part = await postChat({ apiKey, model, messages, signal });
+    } catch (e) {
+      /* A continuation request can fail on 429/timeout after useful text already
+         arrived. Losing the whole report then is worse than a shorter one. */
+      if (!text) throw e;
+      truncated = true;
+      break;
+    }
+
+    if (!part.content.trim()) {
+      if (!text) throw new Error('AI model returned an empty response. Try another model.');
+      truncated = true;
+      break;
+    }
+
+    /* Joined without a separator: "length" almost always cuts mid-token, and a
+       blank line there breaks the sentence, table row or heading it landed in. */
+    text += part.content;
+    messages.push({ role: 'assistant', content: part.content });
+
+    if (part.finishReason !== 'length') {
+      truncated = false;
+      break;
+    }
+    truncated = true;
+    if (turn === MAX_CONTINUATIONS) break;
+    messages.push({ role: 'user', content: CONTINUE_PROMPT });
   }
 
-  if (choice.finish_reason === 'length') {
-    return `${content}
-
----
-
-**Note:** Analysis was truncated at the model's response length limit. Run again with a shorter request or a model with a larger output limit for the full report.`;
-  }
-  return content;
+  return { text, truncated };
 }

@@ -1,7 +1,16 @@
 /* TradingView advanced-chart embed (dynamic creation pattern: the widget loader
    reads its JSON config from the textContent of its own script element). */
 
-export function renderTradingView(container, { symbol, theme = 'dark', locale = 'en' }) {
+export function renderTradingView(container, { symbol, theme = 'dark', locale = 'en', unavailable = false, fallbackMessage = '' }) {
+  /* Assets whose symbol has no TradingView listing at all (catalog rows with
+     tvUnavailable): loading the widget would only paint TradingView's native
+     "This symbol doesn't exist" error, which reads as a bug in this app. Show the
+     app's own clean panel and skip the network request entirely. */
+  if (unavailable) {
+    renderChartFallback(container, fallbackMessage);
+    return false;
+  }
+
   const config = {
     autosize: true,
     symbol: symbol || 'BINANCE:BTCUSDT',

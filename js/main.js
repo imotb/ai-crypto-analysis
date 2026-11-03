@@ -3,7 +3,7 @@ import { T, applyLanguage } from './i18n.js';
 import { loadApiKey, saveApiKey, loadTheme, saveTheme, loadLang, saveLang } from './config.js';
 import { fetchRealTimeData, fetchHistoricalData, enrichFromCoinGecko } from './services/market.js';
 import { runAIAnalysis } from './services/ai.js';
-import { fetchBlockchainData, calculateAdvancedNetworkMetrics, fetchFearGreedIndex, fetchCryptoNews, formatHashRate, getMetricClass, getNVTDescription, getMayerDescription, getPuellDescription } from './services/blockchain.js';
+import { fetchBlockchainData, calculateAdvancedNetworkMetrics, fetchFearGreedIndex, fetchCryptoNews, formatHashRate, getMetricClass, getNVTDescription, getMayerDescription, getPuellDescription, onchainSupportFor } from './services/blockchain.js';
 import { computeAllIndicators } from './analysis/indicators.js';
 import { buildPrompt } from './analysis/promptBuilder.js';
 import { initRipple, applyTheme, toast, revealCards } from './ui/fx.js';
@@ -127,7 +127,10 @@ function renderChart() {
       symbol: state.data.info.tradingViewSymbol,
       theme: state.theme,
       locale: state.lang === 'fa' ? 'fa_IR' : 'en',
+      unavailable: state.data.info.tvUnavailable,
+      fallbackMessage: T[state.lang].chartNotListed,
     });
+    /* An intentionally skipped chart is not a network failure, so chartFailed stays false. */
     state.chartFailed = false;
   } catch (e) {
     state.chartFailed = true;
@@ -147,8 +150,8 @@ function rerenderResults() {
   views.renderLevels(d, state.lang);
   views.renderVolumeProfile(d.technicalIndicators?.volumeProfile, state.lang);
   views.renderFibonacci(d.technicalIndicators?.fibonacci, d.quote?.price, state.lang);
-  views.renderBlockchain(d.blockchain, state.lang, { formatHashRate });
-  views.renderMetrics({ nvtRatio: d.nvtRatio, mayerMultiple: d.mayerMultiple, puellMultiple: d.puellMultiple }, state.lang, { getMetricClass, getNVTDescription, getMayerDescription, getPuellDescription });
+  views.renderBlockchain(d.blockchain, state.lang, { formatHashRate }, d.onchainSupport);
+  views.renderMetrics({ nvtRatio: d.nvtRatio, mayerMultiple: d.mayerMultiple, puellMultiple: d.puellMultiple, onchainSupport: d.onchainSupport }, state.lang, { getMetricClass, getNVTDescription, getMayerDescription, getPuellDescription });
   if (d.news) views.renderNews(d.news, state.lang);
   if (d.report) {
     views.renderReport(d.report, state.lang, modelLabel());
@@ -203,6 +206,12 @@ async function startAnalysis() {
       priceChange24h: filled.priceChange24h ?? 0,
       volume24h: filled.volume24h ?? 0,
       marketCap: filled.marketCap ?? 0,
+      // Supply/ATH/rank were never propagated, so the prompt always said "unknown".
+      circulatingSupply: filled.circulatingSupply ?? null,
+      maxSupply: filled.maxSupply ?? null,
+      ath: filled.ath ?? null,
+      atl: filled.atl ?? null,
+      marketCapRank: filled.marketCapRank ?? null,
       historicalData: historical,
     });
     state.data.quote = filled;
@@ -234,21 +243,24 @@ async function startAnalysis() {
       fetchFearGreedIndex(),
       fetchCryptoNews({ language: state.lang }),
     ]);
-    /* fetchBlockchainData degrades to null instead of throwing, so "fulfilled"
-       alone is not success — the step must follow the value, not the promise. */
-    views.setStep('chain', bcRes.status === 'fulfilled' && bcRes.value ? 'done' : '');
+    const support = onchainSupportFor(info.symbol);
+    state.data.onchainSupport = support;
+    /* A grey "Blockchain" step reads as a failed run, so mark it done when the
+       asset simply has no free on-chain source; leave it pending only when a
+       supported chain actually failed to answer. */
+    views.setStep('chain', support.hasChainStats
+      ? (bcRes.status === 'fulfilled' && bcRes.value ? 'done' : '')
+      : 'done');
     views.setStep('news', newsRes.status === 'fulfilled' && newsRes.value?.length ? 'done' : '');
 
-    if (bcRes.status === 'fulfilled') {
-      state.data.blockchain = bcRes.value;
-      const metrics = calculateAdvancedNetworkMetrics({ cryptoInfo: info, cryptoData: state.data });
-      Object.assign(state.data, metrics);
-      views.renderBlockchain(bcRes.value, state.lang, { formatHashRate });
-      views.renderMetrics(metrics, state.lang, { getMetricClass, getNVTDescription, getMayerDescription, getPuellDescription });
-    } else {
-      views.cardFallback('blockchainContent', T[state.lang].noData);
-      views.cardFallback('metricsContent', T[state.lang].noData);
-    }
+    /* Metrics are computed even when the chain fetch failed or is unsupported:
+       Mayer is price/SMA-200 from the market feed, so gating it on on-chain data
+       left TRON, xStocks and every PoS alt with an empty metrics card. */
+    state.data.blockchain = bcRes.status === 'fulfilled' ? bcRes.value : null;
+    const metrics = calculateAdvancedNetworkMetrics({ cryptoInfo: info, cryptoData: state.data });
+    Object.assign(state.data, metrics);
+    views.renderBlockchain(state.data.blockchain, state.lang, { formatHashRate }, support);
+    views.renderMetrics(metrics, state.lang, { getMetricClass, getNVTDescription, getMayerDescription, getPuellDescription });
 
     state.data.fearGreedIndex = fgRes.status === 'fulfilled' ? fgRes.value : 50;
     state.data.news = newsRes.status === 'fulfilled' ? newsRes.value : [];
@@ -264,10 +276,13 @@ async function startAnalysis() {
       language: state.lang,
     });
     const ctrl = new AbortController();
-    const aiTimer = setTimeout(() => ctrl.abort(), 180000);
+    /* The exchange is now up to three stitched requests (initial + two automatic
+       continuations), so a single 180s budget aborted legitimate resumes. */
+    const aiTimer = setTimeout(() => ctrl.abort(), 300000);
     let report;
     try {
-      report = await runAIAnalysis({ apiKey: state.apiKey, model: state.model, prompt, signal: ctrl.signal });
+      const { text, truncated } = await runAIAnalysis({ apiKey: state.apiKey, model: state.model, prompt, signal: ctrl.signal });
+      report = truncated ? `${text}\n\n---\n\n${T[state.lang].truncatedNote}` : text;
     } finally {
       clearTimeout(aiTimer);
     }

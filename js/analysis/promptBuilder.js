@@ -3,6 +3,8 @@
 // Behavior is identical to the original; class state is replaced by
 // function parameters.
 
+import { formatPrice } from '../format.js';
+
 function getCurrentDateTime(language) {
     const now = new Date();
 
@@ -80,47 +82,6 @@ function getAnalysisTimeContext(language) {
             day: now.getDate(),
             context: `Analysis performed on ${current.date} at ${current.time}. Please provide your analysis based on current market conditions as of this date.`
         };
-    }
-}
-
-// تابع جدید برای فرمت‌بندی قیمت بر اساس نوع ارز
-function formatPrice(price, symbol) {
-    // بررسی وجود price و معتبر بودن آن
-    if (price === undefined || price === null || isNaN(price)) {
-        console.warn('Invalid price detected:', price);
-        return '0.00';
-    }
-
-    // اطمینان از عدد بودن
-    const numPrice = Number(price);
-    if (isNaN(numPrice)) {
-        return '0.00';
-    }
-
-    // لیست ارزهایی که قیمت بسیار پایینی دارند
-    const lowPriceCryptos = ['SHIB', 'PEPE', 'DOGE', 'XLM', 'FLOKI', 'BABYDOGE'];
-
-    if (lowPriceCryptos.includes(symbol)) {
-        if (numPrice < 0.0001) {
-            return numPrice.toFixed(8);
-        } else if (numPrice < 0.01) {
-            return numPrice.toFixed(6);
-        }
-    }
-
-    if (numPrice < 1) {
-        return numPrice.toFixed(4);
-    }
-
-    // استفاده از toLocaleString با حفاظت از خطا
-    try {
-        return numPrice.toLocaleString(undefined, {
-            minimumFractionDigits: 2,
-            maximumFractionDigits: 6
-        });
-    } catch (error) {
-        console.error('Error in toLocaleString:', error);
-        return numPrice.toFixed(2);
     }
 }
 
@@ -232,10 +193,28 @@ export function buildPrompt({ cryptoInfo, cryptoData, analysisType, language }) 
     /* Historical data can be empty (all price sources returned nothing), in
        which case technicalIndicators and the S/R arrays were never created and
        this used to throw "Cannot read properties of undefined (reading 'sma20')". */
-    const indicators = cryptoData.technicalIndicators || {};
+    const rawIndicators = cryptoData.technicalIndicators;
     const na = language === 'fa' ? 'در دسترس نیست' : 'N/A';
-    const fmtInd = v => (v == null || isNaN(v) ? na : formatPrice(v, cryptoInfo.symbol));
-    const formattedPrice = formatPrice(cryptoData.price, cryptoInfo.symbol);
+    /* A delisted asset (no klines anywhere) leaves every nested indicator group
+       absent as well, and the templates read bollingerBands.upper next — so the
+       whole prompt build threw before the request was even sent. Defaulting the
+       groups lets the fields render as "N/A" instead of the 0.00 that
+       formatPrice(null) would return, which the model read as a real band. */
+    const indicators = {
+        ...(rawIndicators || {}),
+        bollingerBands: { upper: null, middle: null, lower: null, ...(rawIndicators?.bollingerBands || {}) },
+        stochastic: { k: null, d: null, ...(rawIndicators?.stochastic || {}) },
+        volumeProfile: { poc: null, vah: null, val: null, levels: [], ...(rawIndicators?.volumeProfile || {}) },
+        fibonacci: { levels: [], high: null, low: null, ...(rawIndicators?.fibonacci || {}) },
+    };
+    const fmtNum = v => (v == null || isNaN(v) ? na : String(v));
+    const fmtWith$ = v => (v == null || isNaN(v) ? na : `$${formatPrice(v)}`);
+    const fmtRsi = v => (v == null || isNaN(v) ? na : `${v} (${getRSIInterpretation(v, language)})`);
+    const fmtFib = v => (v.levels || []).length
+        ? v.levels.map(level => `${(level.level * 100).toFixed(1)}%: $${formatPrice(level.price)}`).join(', ')
+        : na;
+    const fmtInd = v => (v == null || isNaN(v) ? na : formatPrice(v));
+    const formattedPrice = formatPrice(cryptoData.price);
     const formattedSMA20 = fmtInd(indicators.sma20);
     const formattedSMA50 = fmtInd(indicators.sma50);
     const formattedSMA200 = fmtInd(indicators.sma200); // SMA200
@@ -247,12 +226,12 @@ export function buildPrompt({ cryptoInfo, cryptoData, analysisType, language }) 
         ? cryptoData.resistanceLevelsShort : cryptoData.resistanceLevelsLong) || [];
 
     const formattedSupportLevels = supportLevels.map(level =>
-        `${formatPrice(level.price, cryptoInfo.symbol)} (قدرت: ${(level.strength * 100).toFixed(0)}%)`
-    ).join(', ');
+        `${formatPrice(level.price)} (قدرت: ${(level.strength * 100).toFixed(0)}%)`
+    ).join(', ') || na;
 
     const formattedResistanceLevels = resistanceLevels.map(level =>
-        `${formatPrice(level.price, cryptoInfo.symbol)} (قدرت: ${(level.strength * 100).toFixed(0)}%)`
-    ).join(', ');
+        `${formatPrice(level.price)} (قدرت: ${(level.strength * 100).toFixed(0)}%)`
+    ).join(', ') || na;
 
     // داده‌های بلاکچین و متریک‌های پیشرفته
     const blockchainData = cryptoData.blockchain || {};
@@ -269,12 +248,30 @@ export function buildPrompt({ cryptoInfo, cryptoData, analysisType, language }) 
     const formattedNVT = cryptoData.nvtRatio > 0 ? `${cryptoData.nvtRatio.toFixed(2)} (${getNVTDescription(cryptoData.nvtRatio, language)})` : (language === 'fa' ? 'در دسترس نیست' : 'N/A');
     const formattedMayer = cryptoData.mayerMultiple > 0 ? `${cryptoData.mayerMultiple.toFixed(2)} (${getMayerDescription(cryptoData.mayerMultiple, language)})` : (language === 'fa' ? 'در دسترس نیست' : 'N/A');
     const formattedPuell = cryptoData.puellMultiple > 0 ? `${cryptoData.puellMultiple.toFixed(2)} (${getPuellDescription(cryptoData.puellMultiple, language)})` : (language === 'fa' ? 'در دسترس نیست' : 'N/A');
-    const formattedAvgFee = stats.average_transaction_fee > 0 ? `$${stats.average_transaction_fee.toFixed(2)}` : (language === 'fa' ? 'در دسترس نیست' : 'N/A');
+    const formattedAvgFee = stats.average_transaction_fee > 0 ? `$${formatPrice(stats.average_transaction_fee)}` : (language === 'fa' ? 'در دسترس نیست' : 'N/A');
 
     // متن راهنما برای هوش مصنوعی در مورد داده‌های ناموجود
+    /* The model previously invented plausible-looking NVT/Puell numbers for
+       assets that have no on-chain feed at all. Naming the missing metrics and
+       forbidding fabrication stops that at the prompt level. */
+    const support = cryptoData.onchainSupport || {};
+    const missing = [];
+    if (!support.hasChainStats) missing.push(language === 'fa' ? 'داده‌های درون‌شبکه‌ای (سختی، نرخ هش، تعداد تراکنش، آدرس‌های فعال، حجم تراکنش)' : 'on-chain network stats (difficulty, hash rate, transaction count, active addresses, transaction volume)');
+    if (!(cryptoData.nvtRatio > 0)) missing.push('NVT');
+    if (!(cryptoData.mayerMultiple > 0)) missing.push('Mayer');
+    if (!(cryptoData.puellMultiple > 0)) missing.push('Puell');
+    if (!rawIndicators) missing.push(language === 'fa' ? 'همه شاخص‌های تکنیکال (RSI، MACD، باندهای بولینگر، VWAP، سطوح حمایت/مقاومت، POC، فیبوناچی)' : 'every technical indicator (RSI, MACD, Bollinger Bands, VWAP, support/resistance, POC, Fibonacci)');
+    const missingList = missing.length ? missing.join(language === 'fa' ? '، ' : ', ') : (language === 'fa' ? 'موردی' : 'none');
+
     const dataNote = (language === 'fa') ?
-        `**نکته مهم:** اگر در داده‌ها «N/A» یا «در دسترس نیست» مشاهده کردید، به این معناست که داده واقعی برای آن متریک موجود نیست (مخصوصاً برای ارزهایی غیر از بیت‌کوین). لطفاً تحلیل خود را بر اساس داده‌های موجود انجام دهید و به نبود آن داده‌ها اشاره کنید.` :
-        `**Important Note:** If you see "N/A" or "در دسترس نیست" in the data, it means real data is not available for that metric (especially for non-BTC coins). Please perform your analysis based on the available data and note the missing data.`;
+        `**نکته مهم درباره داده‌های ناموجود:** این داشبورد فقط از منابع داده رایگان و عمومی استفاده می‌کند. موارد زیر برای این دارایی محاسبه نشده و اساساً «قابل استفاده نیستند»: ${missingList}.
+    - برای هیچ‌کدام از این شاخص‌ها عدد نسازید و آن‌ها را از منبع دیگری نقل نکنید؛ همه اعداد باید فقط از داده‌های همین پیام بیایند.
+    - در گزارش، صریحاً و کوتاه ذکر کنید که این شاخص‌ها برای این دارایی در دسترس نیستند و تحلیل را بر پایه داده‌های موجود (تکنیکال، قیمت، حجم، احساسات بازار) انجام دهید.
+    - نبود داده‌های درون‌شبکه‌ای را به‌عنوان یک ریسک یا ضعف شبکه تفسیر نکنید؛ صرفاً محدودیت منبع داده است.` :
+        `**Important note about unavailable data:** this dashboard uses only free public data sources. The following are not computed for this asset and are effectively "not applicable": ${missingList}.
+    - Do not invent values for any of them and do not quote them from any other source; every number must come from the data in this prompt only.
+    - State briefly and explicitly that these metrics are unavailable for this asset, then base the analysis on the data that is present (technical indicators, price, volume, market sentiment).
+    - Do not interpret missing on-chain data as a weakness or risk of the network; it is purely a data-source limitation.`;
 
 
     if (language === 'fa') {
@@ -303,20 +300,20 @@ export function buildPrompt({ cryptoInfo, cryptoData, analysisType, language }) 
     - عرضه در گردش: ${cryptoData.circulatingSupply ? cryptoData.circulatingSupply.toLocaleString() : 'نامشخص'}
 
     🎯 **شاخص‌های تکنیکال پیشرفته:**
-    - RSI: ${indicators.rsi} (${getRSIInterpretation(indicators.rsi, language)})
+    - RSI: ${fmtRsi(indicators.rsi)}
     - MACD: ${indicators.macd ?? na}
     - SMA20: $${formattedSMA20}
     - SMA50: $${formattedSMA50}
     - SMA200: $${formattedSMA200}
     - باندهای بولینگر: 
-    بالا=$${formatPrice(indicators.bollingerBands.upper, cryptoInfo.symbol)}, 
-    میانی=$${formatPrice(indicators.bollingerBands.middle, cryptoInfo.symbol)}, 
-    پایین=$${formatPrice(indicators.bollingerBands.lower, cryptoInfo.symbol)}
-    - استوکاستیک: K=${indicators.stochastic.k}, D=${indicators.stochastic.d}
-    - شاخص میانگین جهت‌دار (ADX): ${indicators.adx}
-    - میانگین دامنه واقعی (ATR): ${indicators.atr}
-    - حجم تراز (OBV): ${indicators.obv}
-    - میانگین وزنی قیمت بر پایه حجم (VWAP): ${formatPrice(indicators.vwap, cryptoInfo.symbol)}
+    بالا=${fmtWith$(indicators.bollingerBands.upper)}, 
+    میانی=${fmtWith$(indicators.bollingerBands.middle)}, 
+    پایین=${fmtWith$(indicators.bollingerBands.lower)}
+    - استوکاستیک: K=${fmtNum(indicators.stochastic.k)}, D=${fmtNum(indicators.stochastic.d)}
+    - شاخص میانگین جهت‌دار (ADX): ${fmtNum(indicators.adx)}
+    - میانگین دامنه واقعی (ATR): ${fmtNum(indicators.atr)}
+    - حجم تراز (OBV): ${fmtNum(indicators.obv)}
+    - میانگین وزنی قیمت بر پایه حجم (VWAP): ${fmtInd(indicators.vwap)}
 
     ⛓️ **داده‌های پیشرفته بلاکچین:**
     - سختی شبکه: ${formattedDifficulty}
@@ -333,9 +330,9 @@ export function buildPrompt({ cryptoInfo, cryptoData, analysisType, language }) 
     🎯 **سطوح کلیدی:**
     - سطوح حمایت: ${formattedSupportLevels}
     - سطوح مقاومت: ${formattedResistanceLevels}
-    - Point of Control (POC): $${formatPrice(indicators.volumeProfile.poc, cryptoInfo.symbol)}
-    - Value Area High (VAH): $${formatPrice(indicators.volumeProfile.vah, cryptoInfo.symbol)}
-    - Value Area Low (VAL): $${formatPrice(indicators.volumeProfile.val, cryptoInfo.symbol)}
+    - Point of Control (POC): ${fmtWith$(indicators.volumeProfile.poc)}
+    - Value Area High (VAH): ${fmtWith$(indicators.volumeProfile.vah)}
+    - Value Area Low (VAL): ${fmtWith$(indicators.volumeProfile.val)}
 
     🧠 **شاخص احساسات بازار:**
     - شاخص ترس و طمع: ${cryptoData.fearGreedIndex ?? na} (${getFearGreedText(cryptoData.fearGreedIndex, language)})
@@ -400,14 +397,14 @@ export function buildPrompt({ cryptoInfo, cryptoData, analysisType, language }) 
     - حداکثر عرضه: ${cryptoData.maxSupply ? cryptoData.maxSupply.toLocaleString() : 'نامشخص'}
 
     🎯 **شاخص‌های تکنیکال بلندمدت:**
-    - RSI: ${indicators.rsi}
+    - RSI: ${fmtNum(indicators.rsi)}
     - MACD: ${indicators.macd ?? na}
     - SMA20: $${formattedSMA20}
     - SMA50: $${formattedSMA50}
     - SMA200: $${formattedSMA200}
     - باندهای بولینگر (پریود 50): 
-    بالا=$${formatPrice(indicators.bollingerBands.upper, cryptoInfo.symbol)}, 
-    پایین=$${formatPrice(indicators.bollingerBands.lower, cryptoInfo.symbol)}
+    بالا=${fmtWith$(indicators.bollingerBands.upper)}, 
+    پایین=${fmtWith$(indicators.bollingerBands.lower)}
 
     ⛓️ **داده‌های پیشرفته بلاکچین:**
     - سختی شبکه: ${formattedDifficulty}
@@ -426,9 +423,7 @@ export function buildPrompt({ cryptoInfo, cryptoData, analysisType, language }) 
     🎯 **سطوح کلیدی بلندمدت:**
     - سطوح حمایت بلندمدت: ${formattedSupportLevels}
     - سطوح مقاومت بلندمدت: ${formattedResistanceLevels}
-    - سطوح بازگشت فیبوناچی: ${indicators.fibonacci.levels.map(level =>
-        `${(level.level * 100).toFixed(1)}%: $${formatPrice(level.price, cryptoInfo.symbol)}`
-    ).join(', ')}
+    - سطوح بازگشت فیبوناچی: ${fmtFib(indicators.fibonacci)}
 
     🧠 **شاخص‌های کلان بازار:**
     - شاخص ترس و طمع: ${cryptoData.fearGreedIndex ?? na} (${getFearGreedText(cryptoData.fearGreedIndex, language)})
@@ -503,20 +498,20 @@ export function buildPrompt({ cryptoInfo, cryptoData, analysisType, language }) 
     - Circulating supply: ${cryptoData.circulatingSupply ? cryptoData.circulatingSupply.toLocaleString() : 'Unknown'}
 
     🎯 **Advanced Technical Indicators:**
-    - RSI: ${indicators.rsi} (${getRSIInterpretation(indicators.rsi, language)})
+    - RSI: ${fmtRsi(indicators.rsi)}
     - MACD: ${indicators.macd ?? na}
     - SMA20: $${formattedSMA20}
     - SMA50: $${formattedSMA50}
     - SMA200: $${formattedSMA200}
     - Bollinger Bands: 
-    upper=$${formatPrice(indicators.bollingerBands.upper, cryptoInfo.symbol)}, 
-    middle=$${formatPrice(indicators.bollingerBands.middle, cryptoInfo.symbol)}, 
-    lower=$${formatPrice(indicators.bollingerBands.lower, cryptoInfo.symbol)}
-    - Stochastic: K=${indicators.stochastic.k}, D=${indicators.stochastic.d}
-    - Average Directional Index (ADX): ${indicators.adx}
-    - Average True Range (ATR): ${indicators.atr}
-    - On-Balance Volume (OBV): ${indicators.obv}
-    - Volume Weighted Average Price (VWAP): ${formatPrice(indicators.vwap, cryptoInfo.symbol)}
+    upper=${fmtWith$(indicators.bollingerBands.upper)}, 
+    middle=${fmtWith$(indicators.bollingerBands.middle)}, 
+    lower=${fmtWith$(indicators.bollingerBands.lower)}
+    - Stochastic: K=${fmtNum(indicators.stochastic.k)}, D=${fmtNum(indicators.stochastic.d)}
+    - Average Directional Index (ADX): ${fmtNum(indicators.adx)}
+    - Average True Range (ATR): ${fmtNum(indicators.atr)}
+    - On-Balance Volume (OBV): ${fmtNum(indicators.obv)}
+    - Volume Weighted Average Price (VWAP): ${fmtInd(indicators.vwap)}
 
     ⛓️ **Advanced Blockchain Data:**
     - Network Difficulty: ${formattedDifficulty}
@@ -533,9 +528,9 @@ export function buildPrompt({ cryptoInfo, cryptoData, analysisType, language }) 
     🎯 **Key Levels:**
     - Support Levels: ${formattedSupportLevels}
     - Resistance Levels: ${formattedResistanceLevels}
-    - Point of Control (POC): $${formatPrice(indicators.volumeProfile.poc, cryptoInfo.symbol)}
-    - Value Area High (VAH): $${formatPrice(indicators.volumeProfile.vah, cryptoInfo.symbol)}
-    - Value Area Low (VAL): $${formatPrice(indicators.volumeProfile.val, cryptoInfo.symbol)}
+    - Point of Control (POC): ${fmtWith$(indicators.volumeProfile.poc)}
+    - Value Area High (VAH): ${fmtWith$(indicators.volumeProfile.vah)}
+    - Value Area Low (VAL): ${fmtWith$(indicators.volumeProfile.val)}
 
     🧠 **Market Sentiment:**
     - Fear & Greed Index: ${cryptoData.fearGreedIndex ?? na} (${getFearGreedText(cryptoData.fearGreedIndex, language)})
@@ -601,14 +596,14 @@ export function buildPrompt({ cryptoInfo, cryptoData, analysisType, language }) 
     - Max supply: ${cryptoData.maxSupply ? cryptoData.maxSupply.toLocaleString() : 'Unknown'}
 
     🎯 **Long-term Technical Indicators:**
-    - RSI: ${indicators.rsi}
+    - RSI: ${fmtNum(indicators.rsi)}
     - MACD: ${indicators.macd ?? na}
     - SMA20: $${formattedSMA20}
     - SMA50: $${formattedSMA50}
     - SMA200: $${formattedSMA200}
     - Bollinger Bands (50 period): 
-    upper=$${formatPrice(indicators.bollingerBands.upper, cryptoInfo.symbol)}, 
-    lower=$${formatPrice(indicators.bollingerBands.lower, cryptoInfo.symbol)}
+    upper=${fmtWith$(indicators.bollingerBands.upper)}, 
+    lower=${fmtWith$(indicators.bollingerBands.lower)}
 
     ⛓️ **Advanced Blockchain Data:**
     - Network Difficulty: ${formattedDifficulty}
@@ -627,9 +622,7 @@ export function buildPrompt({ cryptoInfo, cryptoData, analysisType, language }) 
     🎯 **Long-term Key Levels:**
     - Long-term Support Levels: ${formattedSupportLevels}
     - Long-term Resistance Levels: ${formattedResistanceLevels}
-    - Fibonacci Retracement Levels: ${indicators.fibonacci.levels.map(level =>
-        `${(level.level * 100).toFixed(1)}%: $${formatPrice(level.price, cryptoInfo.symbol)}`
-    ).join(', ')}
+    - Fibonacci Retracement Levels: ${fmtFib(indicators.fibonacci)}
 
     🧠 **Macro Market Indicators:**
     - Fear & Greed Index: ${cryptoData.fearGreedIndex ?? na} (${getFearGreedText(cryptoData.fearGreedIndex, language)})

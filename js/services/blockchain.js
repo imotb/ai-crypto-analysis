@@ -212,6 +212,34 @@ export async function fetchEthereumData() {
     }
 }
 
+/* Which assets actually have a free, key-less on-chain source, and what that
+   source can report. Verified live (Nov 2, 2026):
+     - Blockchair does NOT index tron, solana or polkadot (404 / TLS-blocked),
+       and returns only transactions_24h + price for cardano and stellar.
+     - CoinGecko has deprecated block_number / hashrate / tx-count fields, so it
+       cannot fill these either.
+   Anything absent here genuinely has no free on-chain feed — the UI must say so
+   instead of rendering a card of dashes. */
+const ONCHAIN_SOURCES = {
+    BTC: 'blockchain.info',
+    ETH: 'blockscout',
+    ...Object.fromEntries(Object.entries(BLOCKCHAIR_SLUGS).map(([sym]) => [sym, 'blockchair'])),
+};
+
+/* Metrics that are structurally chain-specific, not merely "missing right now". */
+export function onchainSupportFor(symbol) {
+    const source = ONCHAIN_SOURCES[symbol] || null;
+    return {
+        source,
+        hasChainStats: !!source,
+        // NVT needs a trustworthy on-chain transfer volume for the chain.
+        supportsNVT: source === 'blockchain.info' || source === 'blockchair',
+        // Puell is miner-issuance based: meaningful only for PoW chains with a
+        // revenue feed, i.e. Bitcoin on the free tiers we use.
+        supportsPuell: symbol === 'BTC',
+    };
+}
+
 /**
  * Fetch blockchain data for a coin.
  * Returns { networkDifficulty, hashRate, transactionCount, activeAddresses, transactionVolume }
@@ -230,7 +258,13 @@ export async function fetchBlockchainData({ cryptoInfo } = {}) {
                     || ((parseFloat(stats.total_btc_sent) / 1e8) * parseFloat(stats.market_price_usd || 0));
                 return {
                     networkDifficulty: stats.difficulty,
-                    hashRate: stats.hash_rate,
+                    /* blockchain.info reports hash_rate in GH/s, while Blockchair
+                       reports hashrate_24h in raw hashes/s — the shared
+                       formatHashRate() assumes hashes/s. Cross-checked live:
+                       907 GH/s here vs 916 EH/s from Blockchair for the same
+                       network, i.e. this value was understated by 1e9 (BTC
+                       displayed "907 GH/s" instead of "907 EH/s"). */
+                    hashRate: parseFloat(stats.hash_rate) * 1e9,
                     transactionCount: stats.n_tx,
                     activeAddresses: null,
                     transactionVolume: volumeUsd > 0 ? volumeUsd : null,
@@ -265,44 +299,42 @@ export async function fetchBlockchainData({ cryptoInfo } = {}) {
 // ---------------------------------------------------------------------------
 
 /**
- * Computes advanced on-chain metrics from fetched data.
- * Returns { nvtRatio, mayerMultiple, puellMultiple } — the same fields
- * displayAdvancedMetrics() reads (0 means "no data", same as original).
+ * Computes the advanced network metrics.
+ * Returns null for any metric that cannot be derived — never 0, because the UI
+ * rendered a literal "0" next to "No data available", which read as a real
+ * (and alarming) measurement.
+ *
+ * Mayer is deliberately NOT gated on on-chain data: it is price / SMA-200, both
+ * of which come from the market feed, so it is available for every asset with
+ * 200+ days of history (TRX, ADA, SOL, xStocks included).
  */
 export function calculateAdvancedNetworkMetrics({ cryptoInfo, cryptoData } = {}) {
     try {
-        const blockchain = cryptoData && cryptoData.blockchain;
-        if (!blockchain) {
-            console.warn('No blockchain data available for advanced metrics');
-            return { nvtRatio: 0, mayerMultiple: 0, puellMultiple: 0 };
-        }
-
-        const price = cryptoData.price;
-        const marketCap = cryptoData.marketCap;
+        const blockchain = (cryptoData && cryptoData.blockchain) || null;
+        const price = cryptoData && cryptoData.price;
+        const marketCap = cryptoData && cryptoData.marketCap;
+        const support = onchainSupportFor(cryptoInfo && cryptoInfo.symbol);
 
         // NVT Ratio (Network Value to Transactions)
-        let nvtRatio = 0;
-        if (blockchain.transactionVolume && price && marketCap && blockchain.transactionVolume > 0) {
+        let nvtRatio = null;
+        if (support.supportsNVT && blockchain && blockchain.transactionVolume > 0 && marketCap > 0) {
             nvtRatio = marketCap / blockchain.transactionVolume;
         }
 
         // Mayer Multiple using real SMA 200
-        let mayerMultiple = 0;
-        const sma200 = cryptoData.technicalIndicators && cryptoData.technicalIndicators.sma200;
-        if (price && sma200 && sma200 > 0) {
-            mayerMultiple = price / sma200;
-        } else {
-            console.warn('Real SMA200 not available or is zero, cannot calculate Mayer Multiple.');
-        }
+        let mayerMultiple = null;
+        const sma200 = cryptoData && cryptoData.technicalIndicators && cryptoData.technicalIndicators.sma200;
+        if (price > 0 && sma200 > 0) mayerMultiple = price / sma200;
 
-        /* Puell Multiple = daily issuance USD / its 365-day moving average. The
-           API gives no 365-day issuance history, so the previous approximation
-           (x / (x*0.8)) always returned the constant 1.25. Report "no data"
-           instead of a fabricated reading. */
-        return { nvtRatio, mayerMultiple, puellMultiple: 0 };
+        /* Puell Multiple = daily miner-issuance USD / its 365-day moving average.
+           No free feed exposes the 365-day issuance series, so even for BTC we
+           report null rather than the old constant 1.25. */
+        const puellMultiple = null;
+
+        return { nvtRatio, mayerMultiple, puellMultiple, onchainSupport: support };
     } catch (error) {
         console.error('Error in calculateAdvancedNetworkMetrics:', error);
-        return { nvtRatio: 0, mayerMultiple: 0, puellMultiple: 0 };
+        return { nvtRatio: null, mayerMultiple: null, puellMultiple: null };
     }
 }
 
@@ -310,11 +342,16 @@ export function calculateAdvancedNetworkMetrics({ cryptoInfo, cryptoData } = {})
 // Presentation helpers (exported for reuse by the UI layer)
 // ---------------------------------------------------------------------------
 
+/* Expects hashes/s. Returns null for chains that have no hash rate (PoS, e.g.
+   ETH reports 0) so the caller shows "—" instead of a misleading "0.00 GH/s". */
 export function formatHashRate(hashRate) {
-    if (hashRate >= 1e18) return (hashRate / 1e18).toFixed(2) + ' EH/s';
-    if (hashRate >= 1e15) return (hashRate / 1e15).toFixed(2) + ' PH/s';
-    if (hashRate >= 1e12) return (hashRate / 1e12).toFixed(2) + ' TH/s';
-    return (hashRate / 1e9).toFixed(2) + ' GH/s';
+    const h = Number(hashRate);
+    if (!Number.isFinite(h) || h <= 0) return null;
+    if (h >= 1e18) return (h / 1e18).toFixed(2) + ' EH/s';
+    if (h >= 1e15) return (h / 1e15).toFixed(2) + ' PH/s';
+    if (h >= 1e12) return (h / 1e12).toFixed(2) + ' TH/s';
+    if (h >= 1e9) return (h / 1e9).toFixed(2) + ' GH/s';
+    return (h / 1e6).toFixed(2) + ' MH/s';
 }
 
 export function getNetworkHealthClass(value, type) {
@@ -382,9 +419,9 @@ export function getMayerDescription(value, language = 'fa') {
     if (!value) return language === 'fa' ? 'داده‌ای موجود نیست' : 'No data available';
 
     if (language === 'fa') {
-        if (value > 2.4) return 'قیمت نسبت به میانگین 200 روزه بسیار بالا است';
-        if (value < 1.0) return 'قیمت نسبت به میانگین 200 روزه پایین است';
-        return 'قیمت در محدوده سالم نسبت به میانگین 200 روزه';
+        if (value > 2.4) return 'قیمت نسبت به میانگین ۲۰۰ روزه بسیار بالا است';
+        if (value < 1.0) return 'قیمت نسبت به میانگین ۲۰۰ روزه پایین است';
+        return 'قیمت در محدوده سالم نسبت به میانگین ۲۰۰ روزه';
     } else {
         if (value > 2.4) return 'Price is very high relative to 200-day moving average';
         if (value < 1.0) return 'Price is low relative to 200-day moving average';
