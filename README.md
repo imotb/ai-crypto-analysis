@@ -17,9 +17,21 @@
 - **🎨 رابط کاربری مدرن:** طراحی Glassmorphism با تم روشن/تاریک، انیمیشن‌های ریزتعامل، اسکلتون لودینگ، ظاهر شدن پلکانی کارت‌ها و افکت Ripple.
 - **🌐 دوزبانه کامل (فارسی/انگلیسی):** پشتیبانی همزمان RTL و LTR با یک دکمه؛ نام ارز، عنوان صفحه و همه نماها با تغییر زبان دوباره رندر می‌شوند.
 - **📊 اندیکاتورهای پیشرفته:** علاوه بر RSI و MACD، حالا بانجر، استوکاستیک، ADX، ATR، OBV، VWAP، ایچیموکو، فیبوناچی و Volume Profile هم محاسبه می‌شود.
+- **💸 دقت پویا برای قیمت‌های بسیار کوچک:** تعداد اعشار بر پایه قدر عدد انتخاب می‌شود تا همیشه ۴ رقم بامعنا دیده شود. دارایی‌هایی مثل BABYDOGE با قیمت ۳٫۱۳×۱۰⁻¹⁰ به‌جای `$0.00000000` مقدار واقعی `$0.0000000003135` را در ویجت قیمت، اندیکاتورها، سطوح حمایت/مقاومت، فیبوناچی و پرامپت نشان می‌دهند؛ برای اعداد کوچک‌تر از ۱۰⁻¹⁸ هم از نماد علمی استفاده می‌شود.
 - **🔗 منبع داده سه‌لایه:** Binance → CoinGecko → CoinPaprika با خطایابی خودکار (رفع مشکل CORS بایننس).
-- **🧩 ماژولار:** پیش از این بازطراحی، همه منطق پروژه در یک فایل `script.js` به طول ۳۹۱۶ خط جمع شده بود؛ آن فایل نسل اول (legacy) حالا حذف شده و دیگر در ریپو قرار ندارد. کد فعلی به ۱۴ ماژول ES مجزا (سرویس‌ها، تحلیل، UI) تقسیم شده و jQuery و Select2 حذف شدند؛ جای آن‌ها یک کمبوکس جستجوپذیر و دسترس‌پذیر نشسته است.
+- **🧩 ماژولار:** پیش از این بازطراحی، همه منطق پروژه در یک فایل `script.js` به طول ۳۹۱۶ خط جمع شده بود؛ آن فایل نسل اول (legacy) حالا حذف شده و دیگر در ریپو قرار ندارد. کد فعلی به ۱۵ ماژول ES مجزا (سرویس‌ها، تحلیل، UI) با مجموعاً حدود ۳٬۳۵۰ خط تقسیم شده و jQuery و Select2 حذف شدند؛ جای آن‌ها یک کمبوکس جستجوپذیر و دسترس‌پذیر نشسته است.
 - **🔒 امنیت و پایداری:** کلید API فقط از فیلد «کلید API OpenRouter» در رابط کاربری خوانده و در همان مرورگر ذخیره می‌شود (هیچ کلیدی در کد یا ریپو نیست)؛ خروجی هوش مصنوعی با DOMPurify پاک‌سازی می‌شود، همه درخواست‌ها تایم‌اوت دارند و خطاهای OpenRouter به‌دقت مدیریت می‌شوند (کلید نامعتبر / اعتبار ناکافی / محدودیت نرخ).
+- **🧵 ادامه خودکار گزارش‌های بلند:** هر درخواست با `max_tokens: 8192` ارسال می‌شود؛ اگر مدل پاسخ را در سقف طول قطع کند (`finish_reason: "length"`)، داشبورد خودش متن تولیدشده را به‌عنوان پیام دستیار به همان گفتگو اضافه می‌کند و درخواست ادامه می‌دهد (حداکثر ۲ بار) و تکه‌ها را بدون فاصله به هم می‌چسباند تا جمله، جدول یا تیتر وسط نمی‌شکند. اگر باز هم ناقص ماند، گزارش همان‌جا نمایش داده می‌شود و فقط یک یادداشت محلی‌سازی‌شده به آن افزوده می‌شود: «پاسخ به دلیل محدودیت طول مدل ناقص ماند…».
+
+---
+## ⚠️ محدودیت‌های شناخته‌شده (داده‌های درون‌شبکه‌ای):
+این پنل فقط از APIهای رایگان و بدون کلید استفاده می‌کند؛ به همین دلیل برخی شاخص‌های زنجیره‌ای برای همه دارایی‌ها در دسترس نیستند:
+
+- **🔗 شاخص‌های مخصوص شبکه‌های UTXO:** نسبت NVT، نرخ هش، سختی شبکه، تعداد آدرس‌های فعال و حجم تراکنش‌ها فقط برای شبکه‌های UTXO (مانند BTC، LTC، DOGE، DASH، ZEC، XMR) و ETH قابل دریافت است. برای پلتفرم‌های قرارداد هوشمند (ترون، سولانا، کاردانو، پولکادات) و سهام توکنی‌شده (xStock) منبع رایگانی برای این اعداد وجود ندارد.
+- **🧩 پنل «قابل استفاده نیست»:** در این دارایی‌ها به‌جای جدول خالی یا عدد صفر، یک پنل توضیحی (فارسی/انگلیسی) نمایش داده می‌شود که دقیقاً می‌گوید کدام شاخص و چرا موجود نیست.
+- **📈 ضریب مایر برای همه دارایی‌ها:** ضریب مایر فقط به قیمت و میانگین ۲۰۰ روزه نیاز دارد؛ بنابراین برای هر دارایی که دست‌کم ۲۰۰ روز تاریخچه قیمت داشته باشد محاسبه می‌شود، مستقل از در دسترس بودن داده‌های درون‌شبکه‌ای.
+- **⛏ ضریب پوئل:** بر پایه درآمد روزانه ماینرها محاسبه می‌شود و فقط برای بیت‌کوین معنا دارد؛ چون منبع رایگانی برای میانگین ۳۶۵ روزه انتشار وجود ندارد، به‌جای عدد ساختگی مقدار «داده در دسترس نیست» نمایش داده می‌شود.
+- **🤖 محدودیت ساخت داده در پرامپت:** متن ارسالی به مدل صریحاً فهرست می‌کند کدام شاخص‌ها برای این دارایی محاسبه نشده‌اند و از مدل می‌خواهد برای آن‌ها عدد نسازد، آن‌ها را از منبع دیگری نقل نکند و نبود داده را ضعف شبکه تفسیر نکند.
 
 ---
 ## 🚀 راهنمای استفاده (مهم):
@@ -71,9 +83,21 @@ This panel is completely free and available via GitHub Pages; it does not requir
 - **🎨 Modern UI:** Glassmorphism design with dark/light themes, micro-interactions, skeleton loaders, staggered card reveals and button ripple effects.
 - **🌐 Fully bilingual (Persian/English):** Simultaneous RTL and LTR support with a single toggle — coin names, the page title and every view re-render on switch.
 - **📊 Advanced indicators:** Beyond RSI and MACD, it now computes Bollinger Bands, Stochastic, ADX, ATR, OBV, VWAP, Ichimoku, Fibonacci retracement and Volume Profile (POC/VAH/VAL).
+- **💸 Dynamic precision for ultra-low prices:** a single shared `formatPrice` in `js/format.js` replaced the two divergent copies (one in the UI, one in the prompt builder) that both hardcoded `toFixed(8)` and a whitelist of "cheap" symbols. Decimal places are now derived from the magnitude so four significant digits always stay visible: BABYDOGE at 3.13e-10 renders `$0.0000000003135` in the price widget, indicator chips, support/resistance, Fibonacci levels and the AI prompt instead of `$0.00000000`, falling back to scientific notation below 1e-18.
 - **🔗 Three-layer data fallback:** Binance → CoinGecko → CoinPaprika with automatic degradation (fixes Binance browser CORS blocking).
-- **🧩 Modular architecture:** Before this redesign all logic lived in a single legacy `script.js` of 3,916 lines. That first-generation file has since been deleted and no longer ships in the repository — what exists today is 14 small ES modules (services / analysis / UI). jQuery and Select2 were removed as well and replaced with an accessible, searchable custom combobox.
+- **🧩 Modular architecture:** Before this redesign all logic lived in a single legacy `script.js` of 3,916 lines. That first-generation file has since been deleted and no longer ships in the repository — what exists today is 15 small ES modules (services / analysis / UI) totalling roughly 3,350 lines. jQuery and Select2 were removed as well and replaced with an accessible, searchable custom combobox.
 - **🔒 Security & robustness:** The API key is read only from the "OpenRouter API Key" field in the UI and persisted in your own browser — no key is ever shipped in code or the repository. AI markdown is sanitized with DOMPurify, every request has an AbortController timeout, and OpenRouter failures are mapped to precise, localized errors (INVALID_KEY / NO_CREDITS / RATE_LIMIT).
+- **🧵 Auto-continue for long reports:** every request is sent with `max_tokens: 8192`; when the model cuts the answer at its output limit (`finish_reason: "length"`), the dashboard appends the partial answer as an assistant turn and asks the same conversation to continue — up to 2 extra requests — then stitches the pieces with no separator so a sentence, table row or heading is never split. If the report is still incomplete, what was produced is shown as-is with a localized notice added: "The response stayed incomplete because of the model's output length limit…".
+
+---
+## ⚠️ Known limitations (on-chain data):
+The panel talks only to free, key-less APIs, so some chain-level metrics genuinely do not exist for every asset:
+
+- **🔗 UTXO-only metrics:** NVT ratio, hash rate, network difficulty, active addresses and transaction volume are available only for UTXO chains (BTC, LTC, DOGE, DASH, ZEC, XMR) and ETH. Smart-contract platforms (TRON, Solana, Cardano, Polkadot) and tokenized stocks (xStock) have no free source for these numbers.
+- **🧩 "Not applicable" panel:** for those assets the UI shows an informational panel — in Persian or English — naming exactly which metric is missing and why, instead of an empty table or a misleading zero.
+- **📈 Mayer Multiple for every asset:** Mayer is price ÷ 200-day moving average, so it is computed for any asset with at least 200 days of price history, regardless of on-chain availability.
+- **⛏ Puell Multiple:** built from daily miner revenue, so it is meaningful for Bitcoin only. No free feed exposes the 365-day issuance average, and the card reports "no data" rather than a fabricated constant.
+- **🤖 Prompt guardrail:** the analysis prompt explicitly lists the metrics that were not computed for the selected asset and instructs the model not to invent values, not to quote them from elsewhere, and not to read missing data as network weakness.
 
 ---
 ## 🏗 Project structure (v3):
@@ -84,11 +108,12 @@ js/
   main.js               orchestrator: state + 5-step analysis pipeline
   config.js             guarded localStorage persistence (API key / theme / language)
   i18n.js               Persian & English dictionaries + localized chrome (title, aria-labels)
-  catalog.js            24 AI models, 114 assets (cryptocurrencies + tokenized stocks)
+  catalog.js            28 AI models, 114 assets (cryptocurrencies + tokenized stocks)
+  format.js             one shared price formatter — dynamic precision down to 1e-18
   services/
     http.js             fetchJson with AbortController timeouts + non-JSON 200 guard
     market.js           price + klines: Binance (data-api.binance.vision) → CoinGecko → CoinPaprika
-    ai.js               OpenRouter chat completions + error-code mapping
+    ai.js               OpenRouter chat completions + error-code mapping + auto-continue on "length"
     blockchain.js       chain stats, network metrics (NVT/Mayer), news, Fear & Greed
   analysis/
     indicators.js       RSI, MACD, SMA/EMA, Bollinger, Stochastic, ADX, ATR, OBV, VWAP,
