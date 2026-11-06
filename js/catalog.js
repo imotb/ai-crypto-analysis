@@ -9,6 +9,7 @@ export const MODELS = [
   { id: 'cohere/north-mini-code:free', label: 'North Mini Code (Free)', icon: 'icons/ai/Cohere.png', paid: false },
   { id: 'google/gemma-4-26b-a4b-it:free', label: 'Gemma4-26B-A4B (Free)', icon: 'icons/ai/gemini.png', paid: false },
   { id: 'google/gemma-4-31b-it:free', label: 'Gemma4-31B (Free)', icon: 'icons/ai/gemini.png', paid: false },
+  { id: 'stealth/crouton-alpha', label: 'Crouton Alpha (Free)', icon: 'icons/ai/Stealth.png', paid: false },
   { id: 'recursive/flint-v1.0:free', label: 'Recursive Flint (Free)', icon: 'icons/ai/Recursive.png', paid: false },
   { id: 'liquid/lfm-2.5-2.6b:free', label: 'LFM2.5-2.6B (Free)', icon: 'icons/ai/Liquid.png', paid: false },
   { id: 'xingchen-agi/xing4.0-29b-a4b:free', label: 'Xing4.0 29B A4B (Free)', icon: 'icons/ai/XingChen.png', paid: false },
