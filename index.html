@@ -11,7 +11,7 @@
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@500;700&display=swap" rel="stylesheet">
     <link href="https://cdn.jsdelivr.net/gh/rastikerdar/vazirmatn@v33.003/Vazirmatn-font-face.css" rel="stylesheet">
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css" rel="stylesheet">
-    <link rel="stylesheet" href="style.css?v=3.6">
+    <link rel="stylesheet" href="style.css?v=4.0">
     <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js" defer></script>
     <script src="https://cdn.jsdelivr.net/npm/dompurify@3.2.4/dist/purify.min.js" defer></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js" defer></script>
@@ -55,6 +55,18 @@
                         <small class="help">
                             <span data-i18n="apiKeyHelp">کلید API خود را از openrouter.ai دریافت کنید</span>
                             <a href="https://github.com/imotb/ai-crypto-analysis#-%D8%B1%D8%A7%D9%87%D9%86%D9%85%D8%A7%DB%8C-%D8%A7%D8%B3%D8%AA%D9%81%D8%A7%D8%AF%D9%87-%D9%85%D9%87%D9%85" target="_blank" rel="noopener">(Help)</a>
+                        </small>
+                    </div>
+
+                    <div class="field">
+                        <label for="webSearchKey" data-i18n="searchLabel">کلید API جستجوی وب (Jina):</label>
+                        <div class="input-wrap">
+                            <input type="password" id="webSearchKey" class="input" autocomplete="off" spellcheck="false" data-i18n-placeholder="searchKeyPlaceholder" placeholder="اختیاری — برای افزودن داده‌های لحظه‌ای از منابع رسمی">
+                            <button type="button" id="webSearchKeyEye" class="eye-btn" data-i18n-aria="showKey" aria-label="Show API key"><i class="fas fa-eye"></i></button>
+                        </div>
+                        <small class="help">
+                            <span data-i18n="searchKeyHelp">بدون این کلید هم تحلیل کامل انجام می‌شود؛ کلید رایگان را از dashboard.jina.ai بگیرید</span>
+                            <a href="https://dashboard.jina.ai/" target="_blank" rel="noopener">(Help)</a>
                         </small>
                     </div>
 
@@ -186,6 +198,12 @@
                             <h2 class="card-title"><i class="fas fa-newspaper"></i> <span data-i18n="newsTitle">اخبار بازار کریپتو</span>
                                 <span class="card-hint">Cointelegraph</span></h2>
                             <div id="newsContent"></div>
+                        </section>
+
+                        <section class="card reveal" data-card="search">
+                            <h2 class="card-title"><i class="fas fa-magnifying-glass-chart"></i> <span data-i18n="searchCardTitle">جستجوی وب زنده (منابع رسمی)</span>
+                                <span class="card-hint">Yahoo · Barchart · Perplexity — US / EN</span></h2>
+                            <div id="webSearchContent"></div>
                         </section>
                     </div>
                 </div>

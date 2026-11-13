@@ -510,6 +510,25 @@ html[data-theme='dark'] .combo-pop {
 .news-meta a { color: var(--primary-2); font-weight: 600; }
 .news-desc { font-size: .78rem; color: var(--text-2); margin: 6px 0 0; }
 
+/* ---------- Live web search ---------- */
+.search-list { display: grid; gap: var(--space-3); }
+.search-item {
+  padding: var(--space-3) var(--space-4);
+  border-radius: var(--radius-md);
+  background: var(--glass-2); border: 1px solid var(--border);
+  transition: transform var(--t-fast), border-color var(--t-fast);
+}
+.search-item:hover { transform: translateY(-2px); border-color: var(--border-strong); }
+.search-head { display: flex; align-items: baseline; gap: var(--space-2); flex-wrap: wrap; }
+.search-title { font-size: .86rem; font-weight: 700; line-height: 1.4; color: var(--primary-2); text-decoration: none; }
+.search-title:hover { text-decoration: underline; }
+.search-meta { display: flex; gap: var(--space-3); font-size: .72rem; color: var(--text-3); flex-wrap: wrap; margin-top: 2px; }
+.search-desc { font-size: .78rem; color: var(--text-2); margin: 6px 0 0; }
+/* Source badges reuse the existing pill; only the accent differs per source. */
+.search-badge-yahoo { color: var(--warning); border-color: rgba(245,158,11,.35); background: rgba(245,158,11,.12); }
+.search-badge-barchart { color: var(--success); border-color: rgba(16,185,129,.35); background: rgba(16,185,129,.12); }
+.search-badge-perplexity { color: var(--primary-2); border-color: rgba(34,211,238,.35); background: rgba(34,211,238,.10); }
+
 /* ---------- AI report ---------- */
 .report-body { font-size: .92rem; color: var(--text); }
 .report-body h3 { margin: var(--space-5) 0 var(--space-2); color: var(--text); font-size: 1.02rem; border-inline-start: 3px solid var(--primary); padding-inline-start: var(--space-3); }
