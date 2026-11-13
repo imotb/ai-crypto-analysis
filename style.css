@@ -530,7 +530,10 @@ html[data-theme='dark'] .combo-pop {
 .search-badge-perplexity { color: var(--primary-2); border-color: rgba(34,211,238,.35); background: rgba(34,211,238,.10); }
 
 /* ---------- AI report ---------- */
-.report-body { font-size: .92rem; color: var(--text); }
+.report-body { font-size: .92rem; color: var(--text); overflow-wrap: anywhere; word-break: break-word; }
+/* A 60+ char LTR URL inside an RTL paragraph otherwise escapes its card on
+   narrow screens; isolation keeps the bidi run from reordering the link. */
+.report-body a { overflow-wrap: anywhere; unicode-bidi: isolate; }
 .report-body h3 { margin: var(--space-5) 0 var(--space-2); color: var(--text); font-size: 1.02rem; border-inline-start: 3px solid var(--primary); padding-inline-start: var(--space-3); }
 .report-body h4 { margin: var(--space-4) 0 var(--space-2); font-size: .92rem; }
 .report-body p { margin: var(--space-2) 0; color: var(--text-2); }
@@ -544,6 +547,36 @@ html[data-theme='dark'] .combo-pop {
 .report-body th { background: var(--glass-2); }
 
 .report-toolbar { display: flex; gap: var(--space-3); flex-wrap: wrap; margin-top: var(--space-4); }
+
+/* ---------- Sources chips ---------- */
+.sources-grid { display: flex; flex-wrap: wrap; gap: var(--space-2); margin: var(--space-2) 0 var(--space-3); }
+.src-chip {
+  display: inline-flex; align-items: center; gap: 6px;
+  max-width: 100%;
+  padding: 4px 10px; border-radius: var(--radius-pill);
+  border: 1px solid var(--border); background: var(--glass-2);
+  font-size: .78rem; font-weight: 600; color: var(--text-2); text-decoration: none;
+  direction: ltr; unicode-bidi: isolate; overflow-wrap: anywhere;
+  transition: border-color var(--t-fast), background var(--t-fast);
+}
+.src-chip:hover { border-color: var(--border-strong); background: var(--glass-3); }
+.src-chip .src-dot { flex: none; width: 7px; height: 7px; border-radius: 50%; background: var(--text-3); }
+.src-chip .src-host { white-space: nowrap; }
+.src-chip .src-path {
+  max-width: 22ch; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+  font-family: var(--font-mono); font-size: .72rem; color: var(--text-3);
+}
+/* Dots reuse the search-card source palette so one source looks the same twice. */
+.src-chip.src-yahoo .src-dot { background: var(--warning); }
+.src-chip.src-barchart .src-dot { background: var(--success); }
+.src-chip.src-perplexity .src-dot { background: var(--primary-2); }
+
+/* ---------- Streaming cursor ---------- */
+.stream-cursor { display: inline-block; margin-inline-start: 2px; color: var(--primary-2); animation: stream-blink 1s steps(2, start) infinite; }
+@keyframes stream-blink { 50% { opacity: 0; } }
+@media (prefers-reduced-motion: reduce) {
+  .stream-cursor { animation: none; opacity: .85; }
+}
 
 /* recommendation */
 .reco-banner {
@@ -688,3 +721,15 @@ html[data-theme='dark'] .combo-pop {
 .pdf-header h1 { margin: 0; font-size: 1.4rem; color: #fff; }
 .pdf-header p { margin: 4px 0 0; font-size: .85rem; opacity: .9; }
 body.pdf-mode .topbar-actions, body.pdf-mode .report-toolbar { display: none; }
+/* html2canvas paints no box shadows and clips nowrap text, so the chips flatten
+   and unwrap for the PDF while keeping their colors and wrapping. The print
+   query and the .pdf-mode class need separate rules — a class is not a media
+   feature, so "print, .pdf-mode" would invalidate the whole block. */
+@media print {
+  .src-chip { box-shadow: none; max-width: 100%; }
+  .src-chip .src-path { max-width: none; overflow: visible; text-overflow: clip; white-space: normal; }
+  .stream-cursor { display: none; }
+}
+body.pdf-mode .src-chip { box-shadow: none; max-width: 100%; }
+body.pdf-mode .src-chip .src-path { max-width: none; overflow: visible; text-overflow: clip; white-space: normal; }
+body.pdf-mode .stream-cursor { display: none; }

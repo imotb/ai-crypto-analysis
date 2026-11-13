@@ -127,6 +127,10 @@ function toggleSecret(input, button) {
   button.setAttribute('aria-label', T[state.lang][show ? 'hideKey' : 'showKey']);
 }
 
+function setReportToolsDisabled(disabled) {
+  document.querySelectorAll('.report-toolbar .btn').forEach(btn => { btn.disabled = disabled; });
+}
+
 function setBusy(busy) {
   const btn = $('analyzeBtn');
   btn.disabled = busy;
@@ -333,11 +337,24 @@ async function startAnalysis() {
        continuations), so a single 180s budget aborted legitimate resumes. */
     const aiTimer = setTimeout(() => ctrl.abort(), 300000);
     let report;
+    /* Copy / PDF / Share over a half-written report would save a fragment, and
+       the live text is not the authoritative render anyway. */
+    setReportToolsDisabled(true);
     try {
-      const { text, truncated } = await runAIAnalysis({ apiKey: state.apiKey, model: state.model, prompt, signal: ctrl.signal });
-      report = truncated ? `${text}\n\n---\n\n${T[state.lang].truncatedNote}` : text;
+      const { text, truncated, interrupted } = await runAIAnalysis({
+        apiKey: state.apiKey,
+        model: state.model,
+        prompt,
+        signal: ctrl.signal,
+        onDelta: partial => views.renderReportLive(partial, state.lang, modelLabel()),
+      });
+      /* An interrupted stream keeps the text the user watched being typed, so it
+         gets its own honest notice rather than the length-cap one. */
+      const note = interrupted ? T[state.lang].interruptedNote : T[state.lang].truncatedNote;
+      report = truncated ? `${text}\n\n---\n\n${note}` : text;
     } finally {
       clearTimeout(aiTimer);
+      setReportToolsDisabled(false);
     }
     state.data.report = report;
     views.renderReport(report, state.lang, modelLabel());

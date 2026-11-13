@@ -11,7 +11,52 @@ const MAX_OUTPUT_TOKENS = 8192;
 const MAX_CONTINUATIONS = 2;
 const CONTINUE_PROMPT = 'Continue from exactly where you left off. Do not repeat text already produced. Output only the remaining part of the report.';
 
-async function postChat({ apiKey, model, messages, signal }) {
+/* Shared by the pre-stream (!res.ok), JSON-fallback and mid-stream paths so a
+   failure maps to the same HttpError + code the panel already localizes. */
+function openRouterError(status, data) {
+  const raw = data?.error?.message || data?.error || `HTTP ${status}`;
+  const err = new HttpError(status, String(raw), JSON.stringify(data ?? {}));
+  /* A mid-stream error arrives inside HTTP 200, so the status cannot carry the
+     code — fall back to the numeric code the provider put in the payload. */
+  const code = status === 200 ? Number(data?.error?.code) : status;
+  if (code === 401) err.code = 'INVALID_KEY';
+  else if (code === 402) err.code = 'NO_CREDITS';
+  else if (code === 429) err.code = 'RATE_LIMIT';
+  return err;
+}
+
+/* One SSE event block (the text between two blank lines) -> what it contributes.
+   Pure and exported: this is the unit-test seam, mirroring searchWeb.
+   Unknown/keep-alive/malformed input never throws — a broken line must not cost
+   the user a report that is already typing onto the screen. */
+export function parseSSEEvent(eventText) {
+  const out = { done: false, content: '', finishReason: null, error: null };
+  for (const rawLine of String(eventText ?? '').replace(/\r\n/g, '\n').split('\n')) {
+    const line = rawLine.trimEnd();
+    /* ": OPENROUTER PROCESSING" and friends are SSE comments, not payloads. */
+    if (!line || line.startsWith(':') || !line.startsWith('data:')) continue;
+    const payload = line.slice(5).trim();
+    if (!payload) continue;
+    if (payload === '[DONE]') { out.done = true; continue; }
+    let json;
+    try {
+      json = JSON.parse(payload);
+    } catch {
+      continue;
+    }
+    if (json?.error) { out.error = json.error; continue; }
+    const choice = Array.isArray(json?.choices) ? json.choices[0] : null;
+    if (!choice) continue;
+    /* Only delta.content: reasoning models stream their chain of thought in
+       delta.reasoning, which must never reach the report. finish_reason also
+       arrives on usage-only final chunks that carry no choices at all. */
+    if (typeof choice.delta?.content === 'string') out.content += choice.delta.content;
+    if (choice.finish_reason) out.finishReason = choice.finish_reason;
+  }
+  return out;
+}
+
+async function postChatStream({ apiKey, model, messages, signal, onDelta }) {
   let res;
   try {
     res = await fetch(ENDPOINT, {
@@ -28,6 +73,7 @@ async function postChat({ apiKey, model, messages, signal }) {
         messages,
         max_tokens: MAX_OUTPUT_TOKENS,
         temperature: 0.3,
+        stream: true,
       }),
     });
   } catch (e) {
@@ -39,48 +85,133 @@ async function postChat({ apiKey, model, messages, signal }) {
     throw err;
   }
 
-  let data;
+  if (!res.ok) {
+    let data = null;
+    try { data = await res.json(); } catch { /* an HTML error page is fine here */ }
+    throw openRouterError(res.status, data);
+  }
+
+  const ctype = res.headers.get('content-type') || '';
+  if (!ctype.includes('text/event-stream') || !res.body) {
+    /* The provider answered with JSON despite stream:true (some routers do), or
+       with something un-parseable as a stream. Either way fall back to the
+       single-shot behavior so the report is not lost. */
+    let data;
+    try {
+      data = await res.json();
+    } catch {
+      throw new HttpError(res.status, `OpenRouter returned a non-JSON response (HTTP ${res.status})`, '');
+    }
+    if (!data || typeof data !== 'object' || data.error) throw openRouterError(res.status, data);
+    const choice = data.choices?.[0];
+    const content = choice?.message?.content || '';
+    onDelta?.(content);
+    return { content, finishReason: choice?.finish_reason };
+  }
+
+  const reader = res.body.getReader();
+  const decoder = new TextDecoder('utf-8');
+  let buffer = '';
+  let content = '';
+  let finishReason = null;
+  let midStreamError = null;
+  let doneSeen = false;
+  let aborted = false;
+
+  const consume = eventText => {
+    const ev = parseSSEEvent(eventText);
+    if (ev.done) doneSeen = true;
+    if (ev.error) midStreamError = ev.error;
+    if (ev.finishReason) finishReason = ev.finishReason;
+    if (ev.content) {
+      content += ev.content;
+      onDelta?.(content);
+    }
+  };
+
   try {
-    data = await res.json();
-  } catch {
-    throw new HttpError(res.status, `OpenRouter returned a non-JSON response (HTTP ${res.status})`, '');
+    while (!doneSeen && !midStreamError) {
+      const { value, done } = await reader.read();
+      if (done) break;
+      buffer += decoder.decode(value, { stream: true });
+      const events = buffer.split('\n\n');
+      buffer = events.pop();
+      /* Stop inside the batch, not just at the loop head: a single read can
+         deliver [DONE] (or an error) followed by junk that must not be typed. */
+      for (const eventText of events) {
+        consume(eventText);
+        if (doneSeen || midStreamError) break;
+      }
+    }
+    if (!doneSeen && !midStreamError) {
+      /* Flush a trailing partial code point, then the last unterminated event. */
+      buffer += decoder.decode();
+      if (buffer.trim()) consume(buffer);
+    }
+    /* One guaranteed final callback, so a turn that produced zero content
+       chunks still leaves the caller in sync with what is on screen. */
+    onDelta?.(content);
+  } catch (e) {
+    /* Nothing typed yet -> the caller decides (a zero-character abort must still
+       surface as AbortError). Text already on screen is never thrown away. */
+    if (!content) throw e;
+    if (e?.name === 'AbortError') aborted = true;
+    else midStreamError = { message: e?.message || 'stream read failed' };
+    onDelta?.(content);
+  } finally {
+    try { reader.releaseLock(); } catch { /* already released */ }
   }
 
-  if (!res.ok || !data || typeof data !== 'object' || data.error) {
-    const raw = data?.error?.message || data?.error || `HTTP ${res.status}`;
-    const err = new HttpError(res.status, String(raw), JSON.stringify(data ?? {}));
-    if (res.status === 401) err.code = 'INVALID_KEY';
-    if (res.status === 402) err.code = 'NO_CREDITS';
-    if (res.status === 429) err.code = 'RATE_LIMIT';
-    throw err;
-  }
+  if (midStreamError && !content) throw openRouterError(res.status, { error: midStreamError });
 
-  const choice = data.choices?.[0];
   return {
-    content: choice?.message?.content || '',
-    finishReason: choice?.finish_reason,
+    content,
+    finishReason,
+    midStreamError: !!midStreamError,
+    aborted,
   };
 }
 
-/* Returns { text, truncated } — truncated is true only when the report could
-   not be finished after MAX_CONTINUATIONS automatic resumes, so the caller can
-   attach its own localized notice (this service has no dictionary). */
-export async function runAIAnalysis({ apiKey, model, prompt, signal }) {
+/* Returns { text, truncated, interrupted } —
+   truncated: the report could not be finished (length cap reached after every
+   continuation, a failed continuation turn, or an interrupted stream), so the
+   caller attaches its own localized notice (this service has no dictionary);
+   interrupted: the user watched text being typed and the exchange then stopped
+   (abort signal or mid-stream error) — a different notice than a plain length
+   cut, and text is never thrown away in that case. */
+export async function runAIAnalysis({ apiKey, model, prompt, signal, onDelta }) {
   if (!apiKey) throw new Error('NO_API_KEY');
 
   const messages = [{ role: 'user', content: prompt }];
   let text = '';
   let truncated = false;
+  let interrupted = false;
 
   for (let turn = 0; turn <= MAX_CONTINUATIONS; turn++) {
+    const before = text;
     let part;
     try {
-      part = await postChat({ apiKey, model, messages, signal });
+      /* The caller sees the FULL report so far, not just this turn, so a
+         continuation appends instead of replacing what is on screen. */
+      part = await postChatStream({ apiKey, model, messages, signal, onDelta: turnText => onDelta?.(before + turnText) });
     } catch (e) {
+      if (e?.name === 'AbortError') {
+        if (!text) throw e;
+        truncated = true;
+        interrupted = true;
+        break;
+      }
       /* A continuation request can fail on 429/timeout after useful text already
          arrived. Losing the whole report then is worse than a shorter one. */
       if (!text) throw e;
       truncated = true;
+      break;
+    }
+
+    if (part.midStreamError || part.aborted) {
+      text += part.content;
+      truncated = true;
+      interrupted = true;
       break;
     }
 
@@ -104,5 +235,5 @@ export async function runAIAnalysis({ apiKey, model, prompt, signal }) {
     messages.push({ role: 'user', content: CONTINUE_PROMPT });
   }
 
-  return { text, truncated };
+  return { text, truncated, interrupted };
 }

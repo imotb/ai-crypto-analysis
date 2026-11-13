@@ -438,9 +438,232 @@ export function renderSearch(items, status, lang) {
   });
 }
 
+/* ---------- live (streaming) report ---------- */
+
+const LIVE_RENDER_MIN_INTERVAL_MS = 150;
+let liveTimer = null;
+let liveLastPaint = 0;
+let livePending = '';
+
+function cancelLiveRender() {
+  if (liveTimer) clearTimeout(liveTimer);
+  liveTimer = null;
+  livePending = '';
+}
+
+function paintLive() {
+  liveTimer = null;
+  liveLastPaint = Date.now();
+  const el = $('reportContent');
+  if (!el) return;
+  const stick = nearPageBottom();
+  const text = livePending;
+  if (!window.marked) el.textContent = text;
+  else setHTML(el, window.marked.parse(text, { breaks: true }));
+  /* Built as an element, never as raw HTML, so the cursor cannot be spoofed by
+     streamed markdown. */
+  const cursor = document.createElement('span');
+  cursor.className = 'stream-cursor';
+  cursor.textContent = '▍';
+  el.append(cursor);
+  if (stick) window.scrollTo({ top: document.documentElement.scrollHeight, behavior: 'auto' });
+}
+
+/* Only follow the output while the user is already at the bottom; someone who
+   scrolled up to re-read a paragraph must not be yanked forward every 150 ms. */
+function nearPageBottom() {
+  const doc = document.documentElement;
+  return window.innerHeight + window.scrollY >= doc.scrollHeight - 240;
+}
+
+export function renderReportLive(partial, lang, modelLabel) {
+  const el = $('reportContent');
+  if (!el) return;
+  const hint = $('reportModelHint');
+  if (hint) setText(hint, `${modelLabel ? `${modelLabel} · ` : ''}${T[lang].streamingHint}`);
+  livePending = String(partial ?? '');
+  if (liveTimer) return;
+  if (Date.now() - liveLastPaint >= LIVE_RENDER_MIN_INTERVAL_MS) paintLive();
+  else liveTimer = setTimeout(paintLive, LIVE_RENDER_MIN_INTERVAL_MS - (Date.now() - liveLastPaint));
+}
+
+/* ---------- sources list rework ---------- */
+
+const SOURCES_HEADING = /^(sources|sources:|منابع|منابع:)\s*$/i;
+/* Models decorate the heading ("### 📚 منابع", "**Sources:**"). Comparing the raw
+   text demanded an exact word and skipped real reports, so compare a normalized
+   form with emoji/punctuation/markdown emphasis stripped instead. */
+function headingWords(text) {
+  return String(text || '')
+    .replace(/[*_`>#]/g, ' ')
+    .replace(/[^\p{L}\p{N}\s]/gu, ' ')
+    .replace(/\s+/g, ' ')
+    .trim()
+    .toLowerCase();
+}
+
+function isSourcesHeading(node) {
+  const w = headingWords(node.textContent);
+  return w === 'sources' || w === 'source' || w === 'منابع' || w === 'منابع:' || SOURCES_HEADING.test(String(node.textContent || '').trim());
+}
+/* marked renders one-URL-per-line as <br>-separated text, and textContent drops
+   the <br>, so a greedy [^\s<>"]+ run would swallow the NEXT URL into one giant
+   href. The lookahead ends every match before a new scheme. */
+const URL_IN_TEXT = /https?:\/\/(?:(?!https?:\/\/)[^\s<>"])+/g;
+const PATH_PREVIEW = 28;
+
+/* Suffix match, dot-boundary, so ca.finance.yahoo.com still reads Yahoo Finance. */
+const SOURCE_HOSTS = [
+  { match: 'finance.yahoo.com', cls: 'yahoo', label: 'Yahoo Finance' },
+  { match: 'barchart.com', cls: 'barchart', label: 'Barchart' },
+  { match: 'perplexity.ai', cls: 'perplexity', label: 'Perplexity Finance' },
+];
+
+function classifyHost(hostname) {
+  const h = String(hostname || '').toLowerCase();
+  for (const s of SOURCE_HOSTS) {
+    if (h === s.match || h.endsWith(`.${s.match}`)) return s;
+  }
+  return { cls: 'other', label: h };
+}
+
+function previewPath(pathname) {
+  const p = String(pathname || '');
+  if (!p || p === '/') return '';
+  return p.length > PATH_PREVIEW ? `${p.slice(0, PATH_PREVIEW - 1).replace(/[/\s-]+$/, '')}…` : p;
+}
+
+/* Pure extraction + dedupe + host classification — the unit-test seam. No DOM and
+   no safeHref here on purpose: safeHref resolves against location, which must not
+   be a dependency of a function the node harness imports. */
+export function extractSourceUrls(regionText, existingHrefs = []) {
+  const out = [];
+  const seen = new Set();
+  const add = raw => {
+    /* A URL written as "(https://x/a)." or followed by a Persian comma must not
+       carry that punctuation into the link. */
+    const candidate = String(raw || '').trim().replace(/[)\]}.,;:!?"']+$/, '').replace(/[،؛]+$/, '');
+    if (!candidate) return;
+    let u;
+    try {
+      u = new URL(candidate);
+    } catch {
+      return;
+    }
+    if (u.protocol !== 'http:' && u.protocol !== 'https:') return;
+    if (seen.has(u.href)) return;
+    seen.add(u.href);
+    const info = classifyHost(u.hostname);
+    out.push({ url: u.href, host: u.hostname, label: info.label, cls: info.cls, path: previewPath(u.pathname) });
+  };
+  (Array.isArray(existingHrefs) ? existingHrefs : []).forEach(add);
+  String(regionText || '').match(URL_IN_TEXT)?.forEach(add);
+  return out;
+}
+
+function buildSourcesGrid(urls) {
+  const grid = document.createElement('div');
+  grid.className = 'sources-grid';
+  urls.forEach(item => {
+    const href = safeHref(item.url);
+    if (!href) return;
+    const chip = document.createElement('a');
+    chip.className = `src-chip src-${item.cls}`;
+    chip.href = href;
+    chip.target = '_blank';
+    chip.rel = 'noopener noreferrer';
+    chip.dir = 'ltr';
+    chip.title = item.url;
+    const dot = document.createElement('span');
+    dot.className = 'src-dot';
+    dot.setAttribute('aria-hidden', 'true');
+    const host = document.createElement('span');
+    host.className = 'src-host';
+    host.textContent = item.label;
+    chip.append(dot, host);
+    if (item.path) {
+      const path = document.createElement('span');
+      path.className = 'src-path';
+      path.textContent = item.path;
+      chip.append(path);
+    }
+    grid.append(chip);
+  });
+  return grid;
+}
+
+function sourcesHeadingLevel(node) {
+  const m = /^H([1-4])$/.exec(node.tagName);
+  return m ? Number(m[1]) : 5;
+}
+
+/* textContent drops <br>, which would glue two URLs onto one line; re-insert the
+   break so the extractor sees the line structure the model actually wrote. */
+function regionText(node) {
+  let text = '';
+  node.childNodes.forEach(n => {
+    if (n.nodeType === Node.BR_NODE) text += '\n';
+    else if (n.nodeType === Node.TEXT_NODE) text += n.nodeValue;
+    else text += regionText(n);
+  });
+  return text;
+}
+
+/* Turns the model's plain-text URL dump into a wrapped row of chips. Called only
+   from the final renderReport, so the throttled live paints stay cheap. */
+export function enhanceSources(el) {
+  if (!el) return;
+  const candidates = el.querySelectorAll('h1, h2, h3, h4, strong, b, p, li');
+  let anchor = null;
+  candidates.forEach(node => {
+    if (!isSourcesHeading(node)) return;
+    /* An <h3>Sources</h3> also contains a matching text run; the outer element is
+       the real heading and its siblings are the region. */
+    if (anchor && anchor.contains(node)) return;
+    anchor = node;
+  });
+  if (!anchor) return;
+
+  const stopLevel = sourcesHeadingLevel(anchor);
+  const region = [];
+  for (let n = anchor.nextElementSibling; n; n = n.nextElementSibling) {
+    const m = /^H([1-4])$/.exec(n.tagName);
+    if (m && Number(m[1]) <= stopLevel) break;
+    region.push(n);
+  }
+
+  const nodes = region.length ? region : (anchor.parentElement && anchor.parentElement !== el ? [anchor.parentElement] : []);
+  const hrefs = [];
+  let text = '';
+  nodes.forEach(n => {
+    n.querySelectorAll('a[href]').forEach(a => hrefs.push(a.getAttribute('href')));
+    text += `${regionText(n)}\n`;
+  });
+
+  const urls = extractSourceUrls(text, hrefs);
+  if (!urls.length) return;
+  const grid = buildSourcesGrid(urls);
+  if (!grid.children.length) return;
+
+  if (region.length) {
+    nodes.forEach(n => n.remove());
+    anchor.after(grid);
+    return;
+  }
+  /* Inline case ("<p><strong>Sources:</strong> https://a https://b</p>"): blank
+     out only the URL text nodes so the heading itself survives. */
+  nodes[0].childNodes.forEach(n => {
+    /* Separate non-global pattern: the sticky /g version carries lastIndex. */
+    if (n.nodeType === Node.TEXT_NODE && /https?:\/\//.test(n.nodeValue)) n.nodeValue = '';
+  });
+  nodes[0].after(grid);
+}
+
 /* ---------- AI report ---------- */
 
 export function renderReport(markdownText, lang, modelLabel) {
+  /* A trailing throttled live paint must never overwrite the final render. */
+  cancelLiveRender();
   setText($('reportModelHint'), modelLabel || '');
   const el = $('reportContent');
   if (!markdownText) { cardFallback('reportContent', T[lang].noData); return; }
@@ -449,6 +672,7 @@ export function renderReport(markdownText, lang, modelLabel) {
     return;
   }
   setHTML(el, window.marked.parse(markdownText, { breaks: true }));
+  enhanceSources(el);
 }
 
 export function renderRecommendation(markdownText, lang) {
