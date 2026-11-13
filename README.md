@@ -21,6 +21,9 @@
 - **🛡 غیرکشنده به‌طور کامل:** بدون کلید، با کلید نامعتبر، یا در زمان محدودیت نرخ، هیچ درخواستی به سرویس جستجو فرستاده نمی‌شود (یا خطای مربوطه نمایش داده می‌شود) و بقیهٔ داشبورد عیناً مثل قبل کار می‌کند. جستجو هرگز درخواست‌های Binance/CoinGecko/CoinPaprika/OpenRouter را بلاک نمی‌کند و از هیچ پراکسی CORS عمومی استفاده نمی‌شود، چون کلید را فاش می‌کرد.
 - **💳 هزینهٔ تقریبی:** هر تحلیل سه پرس‌وجو ارسال می‌کند و هر پرس‌وجو به‌طور ثابت حدود ۱۰٬۰۰۰ توکن Jina مصرف می‌کند؛ در مجموع چیزی نزدیک ۳۰٬۰۰۰ توکن برای هر تحلیل. پلن رایگان Jina با ۱۰ میلیون توکن، بیش از ۳۰۰ تحلیل را پوشش می‌دهد.
 
+- **⌨️ پاسخ هوش مصنوعی به‌صورت زنده تایپ می‌شود:** گزارش با `stream: true` و SSE از OpenRouter دریافت می‌شود و هر بخش به‌محض رسیدن روی صفحه نمایش داده می‌شود (رندرهای میانی تا حد ۱۵۰ میلی‌ثانیه ادغام می‌شوند)؛ دیگر لازم نیست چند دقیقه به یک کارت خالی خیره شوید. اگر اتصال در میانهٔ راه قطع شود، همان متنی که نوشته شده حفظ می‌شود و یک یادداشت صادقانه («ارسال گزارش پیش از پایان قطع شد…») به آن افزوده می‌شود؛ دکمه‌های کپی/PDF تا پایان نوشتن غیرفعال‌اند.
+- **🔗 فهرست منابع به شکل چیپ نمایش داده می‌شود:** نشانی‌های انتهای گزارش هوش مصنوعی از متن بیرون کشیده، یک‌بار شسته و به صورت قرص‌های رنگی (با همان پالت نشان‌های کارت جستجو) در می‌آیند؛ مسیر بلند با بیضی بریده می‌شود و نشانی کامل در `title` می‌ماند. با `overflow-wrap: anywhere` دیگر هیچ نشانی انگلیسیِ بلند از کارت فارسی بیرون نمی‌زند و در موبایل سرریز ایجاد نمی‌شود.
+
 ---
 ## 🆕 امکانات نسخه ۳ (بازطراحی کامل):
 - **🎨 رابط کاربری مدرن:** طراحی Glassmorphism با تم روشن/تاریک، انیمیشن‌های ریزتعامل، اسکلتون لودینگ، ظاهر شدن پلکانی کارت‌ها و افکت Ripple.
@@ -102,6 +105,9 @@ This panel is completely free and available via GitHub Pages; it does not requir
 - **🔑 Optional "Web Search API Key (Jina)" field:** placed right under the OpenRouter key, with the same show/hide eye toggle. It persists in `localStorage` under `websearch_api_key`, completely separate from `openrouter_api_key`. Get a free key at [dashboard.jina.ai](https://dashboard.jina.ai).
 - **🛡 Non-fatal by design:** with no key no request is sent at all; an invalid key or a rate limit only marks the search step as failed and toasts a localized notice, while every other card behaves exactly as before. The search never blocks the Binance/CoinGecko/CoinPaprika/OpenRouter requests and no public CORS proxy is ever used, because that would leak the key.
 - **💳 Approximate cost:** each analysis issues 3 queries and each query is billed a flat ~10,000 Jina tokens, so an analysis costs roughly 30,000 Jina tokens. The free 10M-token tier covers 300+ analyses.
+
+- **⌨️ The AI report types itself in live:** the report is fetched from OpenRouter with `stream: true` over SSE and each chunk is painted as it arrives (intermediate renders coalesce to ~150 ms), so you no longer stare at an empty card for minutes. If the stream stops halfway, the text that was already written is kept and an honest notice is appended ("The report stream stopped before it finished…"); the Copy/PDF buttons stay disabled while it writes.
+- **🔗 The Sources list became chips:** the URLs at the end of the AI report are extracted, cleaned and deduped, then rendered as colored pills reusing the search-card source palette; long paths truncate with an ellipsis and keep the full URL in `title`. Combined with `overflow-wrap: anywhere`, a long English URL can no longer escape a Persian card or overflow the page on mobile.
 
 ---
 ## 🆕 What's new in Version 3 (complete redesign):
