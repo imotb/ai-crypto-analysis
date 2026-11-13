@@ -1,4 +1,4 @@
-## پنل هوشمند تحلیل ارزهای دیجیتال با هوش مصنوعی 🤖 (نسخه ۳)
+## پنل هوشمند تحلیل ارزهای دیجیتال با هوش مصنوعی 🤖 (نسخه ۴)
 پنل تحلیل ارزهای دیجیتال با هوش مصنوعی، یک رابط کاربری تحت وب و کاملاً رایگان است که با استفاده از جدیدترین مدل‌های زبانی بزرگ (LLM) در پشت‌زمینه، تحلیل‌های لحظه‌ای و دقیقی از وضعیت فعلی، پتانسیل‌ها و ریسک‌های بازار رمز ارزها را در اختیار شما قرار می‌دهد.
 کافی‌ست ارز دیجیتال مورد نظر خود را انتخاب کنید تا در کمترین زمان، گزارش کاملی از وضعیت فنی، احساسات بازار، پیش‌بینی کوتاه‌مدت و بلندمدت، سیگنال‌های حمایت و مقاومت و پیشنهاد‌های معاملاتی را از مدل هوش مصنوعی مورد نظر خود دریافت کنید.
 این پنل کاملاً رایگان و از طریق GitHub Pages در دسترس است و نیازی به دیپلوی دستی توسط کاربر ندارد.
@@ -11,6 +11,15 @@
 - **🛠 رابط کاربری ساده:** استفاده آسان بدون نیاز به نصب یا دانش فنی. تنها چیزی که نیاز دارید یک کلید API است.
 - **💰 پشتیبانی از ارزهای مختلف:** تقریباً تمام ارزهای دیجیتال محبوب جهان (مانند BTC، ETH، ADA، SOL و…) به‌علاوه سهام توکنی‌شده (xStock) را تحلیل کنید.
 - **👽 پشتیبانی از LLMهای متنوع:** امکان انتخاب بین مدل‌های مختلف هوش مصنوعی مانند DeepSeek، GPT-OSS، Grok و…
+
+---
+## 🆕 امکانات نسخه ۴ (جستجوی وب زنده):
+- **🔎 جستجوی وب زنده از منابع رسمی:** یک سرویس مستقل در `js/services/websearch.js` که هم‌زمان با بقیهٔ مرحله‌های تحلیل، سه پرس‌وجوی محدود به `site:` را به Jina (`s.jina.ai`) می‌فرستد و نتیجه فقط از سه منبع رسمی مالی است: Yahoo Finance (`finance.yahoo.com/quote`)، Barchart (`barchart.com/crypto/quotes`) و Perplexity Finance (`perplexity.ai/finance`). همیشه منطقهٔ ایالات متحده و زبان انگلیسی (`gl=US&hl=en`)، صرف‌نظر از زبان رابط کاربری.
+- **🧠 تحلیل «امروز» به‌جای تحلیل کلی:** نتیجهٔ جستجو در یک بلوک ساختاریافته به نام `LIVE WEB SEARCH RESULTS` به پرامپت هوش مصنوعی افزوده می‌شود و ۸ قانون اجباری استفاده از داده‌های وب را حمل می‌کند: ترکیب با داده‌های پنل و تاریخ‌زدن به امروز، گزارش هر دو قیمت در صورت اختلاف، اولویت داده‌های ۷۲ ساعت اخیر، استناد به منبع برای هر ادعای وب (مثلاً «per Barchart»)، و در پایان یک فهرست Sources که فقط نشانی‌های واقعاً استفاده‌شده را دارد.
+- **🃏 کارت جدید «جستجوی وب زنده»:** با نشان منبع، پیوند عنوان، خلاصه و تاریخ; دقیقاً مثل کارت اخبار با `textContent` و `safeHref` و DOMPurify در برابر XSS پاک‌سازی می‌شود. فهرست سفید URL در سرویس یک‌بار دیگر نتایج را پالایش می‌کند، بنابراین نشت موتور جستجو (مثلاً صفحهٔ یک نماد دیگر) هرگز به کارت یا پرامپت نمی‌رسد.
+- **🔑 فیلد اختیاری «کلید API جستجوی وب (Jina)»:** درست زیر فیلد کلید OpenRouter، با دکمهٔ نمایش/پنهان‌سازی; در `localStorage` با کلید `websearch_api_key` و کاملاً جدا از کلید OpenRouter ذخیره می‌شود. کلید را از [dashboard.jina.ai](https://dashboard.jina.ai) بگیرید.
+- **🛡 غیرکشنده به‌طور کامل:** بدون کلید، با کلید نامعتبر، یا در زمان محدودیت نرخ، هیچ درخواستی به سرویس جستجو فرستاده نمی‌شود (یا خطای مربوطه نمایش داده می‌شود) و بقیهٔ داشبورد عیناً مثل قبل کار می‌کند. جستجو هرگز درخواست‌های Binance/CoinGecko/CoinPaprika/OpenRouter را بلاک نمی‌کند و از هیچ پراکسی CORS عمومی استفاده نمی‌شود، چون کلید را فاش می‌کرد.
+- **💳 هزینهٔ تقریبی:** هر تحلیل سه پرس‌وجو ارسال می‌کند و هر پرس‌وجو به‌طور ثابت حدود ۱۰٬۰۰۰ توکن Jina مصرف می‌کند؛ در مجموع چیزی نزدیک ۳۰٬۰۰۰ توکن برای هر تحلیل. پلن رایگان Jina با ۱۰ میلیون توکن، بیش از ۳۰۰ تحلیل را پوشش می‌دهد.
 
 ---
 ## 🆕 امکانات نسخه ۳ (بازطراحی کامل):
@@ -48,6 +57,7 @@
 ##### حالا که کلید را دارید، فقط چند کلیک با تحلیل فاصله دارید:
 - به پنل تحلیل کریپتو مراجعه کنید: https://imotb.github.io/ai-crypto-analysis
 - کلید API را در کادر `کلید API OpenRouter` قرار دهید. کلید فقط در مرورگر خودتان ذخیره می‌شود و در بازدیدهای بعدی همان کادر به‌طور خودکار از آن مقدار می‌گیرد.
+- **(اختیاری، نسخه ۴)** کلید Jina را در کادر `کلید API جستجوی وب (Jina)` قرار دهید تا اخبار و قیمت‌های لحظه‌ای منابع رسمی به تحلیل اضافه شود. این کادر در `localStorage` مرورگر شما با کلید `websearch_api_key` ذخیره می‌شود و خالی‌گذاشتن آن فقط بخش جستجو را خاموش می‌کند.
 - مدل هوش مصنوعی مورد نظر را برای تحلیل از لیست انتخاب کنید.
 - ارز دیجیتال مورد نظر را برای تحلیل از لیست انتخاب کنید.
 - در آخر نوع تحلیل را انتخاب کنید و صبر کنید تا هوش مصنوعی گزارش کامل تحلیل را برای شما آماده کند.
@@ -57,6 +67,7 @@
 - **کلید API** خود را مانند یک رمز عبور محافظت کنید و آن را در اختیار کسی قرار ندهید.
 - اگر با خطای **Invalid API Key** مواجه شدید، از درست بودن کلید API واردشده اطمینان حاصل کنید.
 - در صورت بروز خطای **Rate Limit Exceeded**، چند دقیقه صبر کنید و دوباره تلاش کنید.
+- خطای **جستجوی وب** هرگز تحلیل را متوقف نمی‌کند: کلید نامعتبر Jina، محدودیت نرخ یا قطعی `s.jina.ai` فقط کارت جستجو را به حالت خطا می‌برد و گزارش هوش مصنوعی فقط با داده‌های پنل ساخته می‌شود.
 - اگر اینترنت شما قطع باشد، پیام «اتصال اینترنت برقرار نیست» را می‌بینید و بقیه بخش‌های داشبورد (نمودار و اندیکاتورها) از بین نمی‌روند.
 - برای استفاده از مدل‌های پیشرفته‌تر هوش مصنوعی (مانند Claude Opus، GLM، Grok و Gemini نسخه‌های غیررایگان) نیاز به [خرید اعتبار API](https://openrouter.ai/settings/credits) از OpenRouter دارید.
 
@@ -64,7 +75,7 @@
 
 ---
 
-## Smart Cryptocurrency Analysis Panel with AI 🤖 (Version 3)
+## Smart Cryptocurrency Analysis Panel with AI 🤖 (Version 4)
 The Crypto Analysis Panel with AI is a completely free web interface that uses the latest Large Language Models (LLMs) behind the scenes to give you real-time, accurate analysis of the current state, potential and risks of the cryptocurrency market.
 Simply select the cryptocurrency you want and, in the shortest possible time, receive a full report on technical condition, market sentiment, short-term and long-term forecasts, support/resistance signals and trading suggestions from your chosen AI model.
 This panel is completely free and available via GitHub Pages; it does not require any manual deployment by the user.
@@ -77,6 +88,15 @@ This panel is completely free and available via GitHub Pages; it does not requir
 - **🛠 Simple interface:** Easy to use with no installation or technical knowledge. All you need is an API key.
 - **💰 Broad asset coverage:** Analyse almost all of the world's popular cryptocurrencies (BTC, ETH, ADA, SOL, etc.) plus tokenized stocks (xStock).
 - **👽 Many LLMs:** Choose between different AI models such as DeepSeek, GPT-OSS, Grok, etc.
+
+---
+## 🆕 What's new in Version 4 (live web search):
+- **🔎 Live web search from official sources only:** a fully independent service in `js/services/websearch.js` fires three `site:`-restricted queries at Jina (`s.jina.ai`) in parallel with the other pipeline steps. Results come only from Yahoo Finance (`finance.yahoo.com/quote`), Barchart (`barchart.com/crypto/quotes`) and Perplexity Finance (`perplexity.ai/finance`), always with US region and English (`gl=US&hl=en`) regardless of the UI language.
+- **🧠 A "today" analysis instead of a generic one:** the results are injected into the OpenRouter prompt as a structured `LIVE WEB SEARCH RESULTS` block that carries 8 mandatory WEB DATA USAGE RULES — merge the fresh findings with the panel's technical values and date the report to today, report both numbers when a live quote disagrees with the panel snapshot, prefer items from the last 72 hours, attribute every web-sourced claim to its source (e.g. "(per Barchart)"), and finish with a Sources list containing only the URLs actually used.
+- **🃏 New "Live Web Search" result card:** source badge, clickable title, snippet and optional date. It is sanitized exactly like the news card (`textContent` + `safeHref` + DOMPurify). A URL allowlist re-filters every item inside the service, so an engine leak (a page for a different symbol) never reaches the card or the prompt.
+- **🔑 Optional "Web Search API Key (Jina)" field:** placed right under the OpenRouter key, with the same show/hide eye toggle. It persists in `localStorage` under `websearch_api_key`, completely separate from `openrouter_api_key`. Get a free key at [dashboard.jina.ai](https://dashboard.jina.ai).
+- **🛡 Non-fatal by design:** with no key no request is sent at all; an invalid key or a rate limit only marks the search step as failed and toasts a localized notice, while every other card behaves exactly as before. The search never blocks the Binance/CoinGecko/CoinPaprika/OpenRouter requests and no public CORS proxy is ever used, because that would leak the key.
+- **💳 Approximate cost:** each analysis issues 3 queries and each query is billed a flat ~10,000 Jina tokens, so an analysis costs roughly 30,000 Jina tokens. The free 10M-token tier covers 300+ analyses.
 
 ---
 ## 🆕 What's new in Version 3 (complete redesign):
@@ -100,25 +120,26 @@ The panel talks only to free, key-less APIs, so some chain-level metrics genuine
 - **🤖 Prompt guardrail:** the analysis prompt explicitly lists the metrics that were not computed for the selected asset and instructs the model not to invent values, not to quote them from elsewhere, and not to read missing data as network weakness.
 
 ---
-## 🏗 Project structure (v3):
+## 🏗 Project structure (v4):
 ```
 index.html              semantic RTL/LTR shell: settings form, pipeline, results grid
 style.css               design-token system (CSS vars, data-theme), glass cards, components
 js/
-  main.js               orchestrator: state + 5-step analysis pipeline
-  config.js             guarded localStorage persistence (API key / theme / language)
+  main.js               orchestrator: state + 6-step analysis pipeline
+  config.js             guarded localStorage persistence (API key / search key / theme / language)
   i18n.js               Persian & English dictionaries + localized chrome (title, aria-labels)
-  catalog.js            28 AI models, 114 assets (cryptocurrencies + tokenized stocks)
+  catalog.js            37 AI models, 114 assets (cryptocurrencies + tokenized stocks)
   format.js             one shared price formatter — dynamic precision down to 1e-18
   services/
     http.js             fetchJson with AbortController timeouts + non-JSON 200 guard
     market.js           price + klines: Binance (data-api.binance.vision) → CoinGecko → CoinPaprika
     ai.js               OpenRouter chat completions + error-code mapping + auto-continue on "length"
     blockchain.js       chain stats, network metrics (NVT/Mayer), news, Fear & Greed
+    websearch.js        Jina live search: 3 site-restricted queries, URL allowlist, never throws
   analysis/
     indicators.js       RSI, MACD, SMA/EMA, Bollinger, Stochastic, ADX, ATR, OBV, VWAP,
                         Ichimoku, Fibonacci, Volume Profile, support/resistance detection
-    promptBuilder.js    localized short/long-term analysis prompts
+    promptBuilder.js    localized short/long-term analysis prompts + LIVE WEB SEARCH RESULTS block
   ui/
     fx.js               theme toggle, ripple, scroll reveal, toast system, icon fallback
     combo.js            accessible search combobox (replaces jQuery Select2)
@@ -144,6 +165,7 @@ https://imotb.github.io/ai-crypto-analysis — just push to the repository; no m
 ###### Now that you have the key, you are only a few clicks away from an analysis:
 - Visit the Crypto Analysis Panel: https://imotb.github.io/ai-crypto-analysis
 - Paste the key you copied into the `OpenRouter API Key` box. The key is stored only in your own browser and the same box is auto-filled from it on every visit.
+- **(Optional, Version 4)** Put a Jina key in the `Web Search API Key (Jina)` box to merge live official-source data into the report. It is stored in your browser under `websearch_api_key`, separate from the OpenRouter key, and leaving it empty only switches the search step off. Create one at [dashboard.jina.ai](https://dashboard.jina.ai).
 - Select the AI model you want to analyze with from the list.
 - Select the cryptocurrency you want to analyze from the list.
 - Finally, choose the analysis type and wait for the AI to prepare the full report for you.
@@ -153,6 +175,7 @@ https://imotb.github.io/ai-crypto-analysis — just push to the repository; no m
 - Protect your **API key** like a password and do not share it with anyone.
 - If you get an **Invalid API Key** error, make sure the key you entered is correct.
 - If you get a **Rate Limit Exceeded** error, wait a few minutes and try again.
+- A **web search** failure never stops an analysis: an invalid Jina key, a rate limit or an `s.jina.ai` outage only puts the search card in its failed state, and the AI report is produced from panel data alone.
 - If you are offline you will see a "Network unavailable" message, and the chart and indicators already on screen are not discarded.
 - To use more advanced AI models (Claude Opus, GLM, Grok and Gemini non-free tiers) you need to [purchase API credits](https://openrouter.ai/settings/credits) from OpenRouter.
 
