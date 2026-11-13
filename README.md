@@ -62,6 +62,11 @@
 - ارز دیجیتال مورد نظر را برای تحلیل از لیست انتخاب کنید.
 - در آخر نوع تحلیل را انتخاب کنید و صبر کنید تا هوش مصنوعی گزارش کامل تحلیل را برای شما آماده کند.
 
+### مرحله ۳: ساخت کلید API در Jina (اختیاری)
+- به سایت [jina.ai](https://jina.ai/api-dashboard) بروید و یک حساب کاربری رایگان بسازید.
+- پس از ورود به حساب کاربری، به صفحه [تنظیمات کلیدهای API](https://jina.ai/api-dashboard/key-manager) بروید.
+- کلید API ساخته‌شده را کپی کنید. این کلید چیزی شبیه به `jina_9••••••--8uVK` خواهد بود.
+- کلید Jina را در کادر `کلید API جستجوی وب (Jina)` در [پنل تحلیل](https://imotb.github.io/ai-crypto-analysis/) قرار دهید تا اخبار و قیمت‌های لحظه‌ای منابع رسمی به تحلیل اضافه شود.
 ---
 ## ⚠️ نکات مهم:
 - **کلید API** خود را مانند یک رمز عبور محافظت کنید و آن را در اختیار کسی قرار ندهید.
@@ -170,6 +175,11 @@ https://imotb.github.io/ai-crypto-analysis — just push to the repository; no m
 - Select the cryptocurrency you want to analyze from the list.
 - Finally, choose the analysis type and wait for the AI to prepare the full report for you.
 
+### Step 3: Create an API Key on Jina (Optional)
+- Go to [jina.ai](https://jina.ai/api-dashboard) and create a free account.
+- Once logged in, navigate to the [API Key Settings](https://jina.ai/api-dashboard/key-manager) page.
+- Copy the generated API key. It will look something like `jina_9••••••--8uVK`.
+- Enter the Jina key into the `Web Search API Key (Jina)` field in the [Analysis Panel](https://imotb.github.io/ai-crypto-analysis/) to incorporate real-time news and prices from official sources into your analysis.
 ---
 ## ⚠️ Important notes:
 - Protect your **API key** like a password and do not share it with anyone.
