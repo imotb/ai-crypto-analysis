@@ -3,6 +3,9 @@
    anything in JS on a public page (GitHub Pages) is readable by anyone. */
 
 const LS_KEY = 'openrouter_api_key';
+/* Kept separate from LS_KEY: the Jina search key is optional and must never be
+   read or written by the OpenRouter code path. */
+const LS_SEARCH_KEY = 'websearch_api_key';
 const LS_THEME = 'theme';
 const LS_LANG = 'lang';
 
@@ -25,6 +28,12 @@ export function loadApiKey() {
 }
 
 export function saveApiKey(key) { write(LS_KEY, key); }
+
+export function loadWebSearchKey() {
+  return read(LS_SEARCH_KEY) || '';
+}
+
+export function saveWebSearchKey(key) { write(LS_SEARCH_KEY, key); }
 
 export function loadTheme() {
   try {

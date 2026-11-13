@@ -64,7 +64,7 @@ const $ = id => document.getElementById(id);
 
 /* ---------- pipeline ---------- */
 
-const STEPS = ['price', 'indicators', 'chain', 'news', 'ai'];
+const STEPS = ['price', 'indicators', 'chain', 'news', 'search', 'ai'];
 
 export function buildPipeline(lang) {
   const wrap = $('pipeline');
@@ -110,6 +110,7 @@ export function showResultsSkeleton() {
   setHTML($('blockchainContent'), Array.from({ length: 5 }, () => skeletonBlock(56)).join(''));
   setHTML($('metricsContent'), Array.from({ length: 3 }, () => skeletonBlock(56)).join(''));
   setHTML($('newsContent'), Array.from({ length: 4 }, () => skeletonBlock(74)).join(''));
+  setHTML($('webSearchContent'), Array.from({ length: 3 }, () => skeletonBlock(74)).join(''));
   setHTML($('reportContent'), skeletonLines(10));
   $('recoSlot').innerHTML = '';
 }
@@ -383,6 +384,57 @@ export function renderNews(news, lang) {
     if (href) a.href = href;
     else a.removeAttribute('href');
     node.querySelector('.news-desc').textContent = n.description || '';
+  });
+}
+
+/* ---------- live web search ---------- */
+
+const SEARCH_SOURCE_LABEL = { yahoo: 'searchSourceYahoo', barchart: 'searchSourceBarchart', perplexity: 'searchSourcePerplexity' };
+
+/* status: 'ok' | 'skipped' | 'failed'. Same security pattern as renderNews —
+   the title, snippet and URL all come from an external search engine, so every
+   string goes through textContent and every link through safeHref. */
+export function renderSearch(items, status, lang) {
+  const dict = T[lang];
+  const containerId = 'webSearchContent';
+  if (status === 'skipped') { cardNotApplicable(containerId, dict.searchSkipped); return; }
+  if (status === 'failed') { cardFallback(containerId, dict.searchFailed); return; }
+  if (!items?.length) { cardNotApplicable(containerId, dict.searchEmpty); return; }
+
+  const el = $(containerId);
+  el.innerHTML = `<div class="search-list">${items.map(() => `
+    <article class="search-item">
+      <div class="search-head">
+        <span class="badge"></span>
+        <a class="search-title" target="_blank" rel="noopener noreferrer"></a>
+      </div>
+      <div class="search-meta">
+        <span class="search-host num"></span>
+        <time></time>
+      </div>
+      <p class="search-desc"></p>
+    </article>`).join('')}</div>`;
+
+  el.querySelectorAll('.search-item').forEach((node, i) => {
+    const it = items[i];
+    const labelKey = SEARCH_SOURCE_LABEL[it.source];
+    const badge = node.querySelector('.badge');
+    badge.textContent = labelKey ? dict[labelKey] : 'Jina';
+    badge.classList.add(`search-badge-${it.source || 'other'}`);
+    const a = node.querySelector('.search-title');
+    a.textContent = it.title || it.url;
+    const href = safeHref(it.url);
+    if (href) a.href = href;
+    else a.removeAttribute('href');
+    /* Displayed host is derived from the href the link actually points to, so
+       the card can never advertise a domain it does not link to. */
+    let host = '';
+    try { host = new URL(a.href || '').hostname.replace(/^www\./, ''); } catch { host = ''; }
+    node.querySelector('.search-host').textContent = host;
+    const time = node.querySelector('time');
+    if (it.date) time.textContent = it.date;
+    else time.remove();
+    node.querySelector('.search-desc').textContent = it.description || '';
   });
 }
 

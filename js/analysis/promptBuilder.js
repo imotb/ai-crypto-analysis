@@ -185,7 +185,76 @@ function getPuellDescription(value, language) {
     }
 }
 
-export function buildPrompt({ cryptoInfo, cryptoData, analysisType, language }) {
+const WEB_SOURCE_LABELS = {
+    yahoo: 'Yahoo Finance',
+    barchart: 'Barchart',
+    perplexity: 'Perplexity Finance',
+};
+
+const WEB_BLOCK_LIMIT = 6000;
+/* Matches the service-side snippet cap, so nothing is truncated twice. */
+const SNIPPET_LIMIT_IN_PROMPT = 300;
+
+/* One-line provenance for the skipped/failed path: the templates stay the same
+   length class and the model is told, explicitly, not to wait for web data. */
+function webUnavailableLine(error) {
+    const reason = ['NO_SEARCH_KEY', 'INVALID_SEARCH_KEY', 'SEARCH_RATE_LIMIT', 'SEARCH_FAILED'].includes(error)
+        ? error
+        : 'NO_SEARCH_KEY';
+    return `=== LIVE WEB SEARCH: unavailable (${reason}) — produce the analysis from panel data only. ===`;
+}
+
+function webUsageRules(todayIso) {
+    return `WEB DATA USAGE RULES (MANDATORY):
+1. Freshness: the block above was fetched seconds ago — treat it as today's market picture and merge it with the panel data above into ONE analysis dated today (${todayIso}).
+2. Conflicts: if a web price/change differs from the panel data, report BOTH and explain the gap (panel snapshot latency vs live quote); never silently pick one.
+3. Use web items for: current sentiment, today's price action, latest news/events, technical opinion & ratings (Barchart), forecasts and market context (Perplexity, Yahoo).
+4. Recency: items dated within the last 72 hours outweigh older ones; undated quote-page snippets count as "live".
+5. Provenance: attribute every web-sourced claim to its source, e.g. "(per Barchart)". Panel-sourced claims must cite the indicator value (e.g. "RSI(14) = 62").
+6. Language: search results are in English; translate the INSIGHT into the analysis output language; do not output raw English sentences; URLs may appear only in the Sources list.
+7. Never invent facts: rely only on panel data + this block; if something is missing in both, state it explicitly.
+8. End the analysis with a "Sources:" list that quotes the exact URLs of the web items you actually used, one plain URL per line — naming the source alone is not acceptable.`;
+}
+
+function webItemLines(items, descLimit) {
+    return items.map((item, i) => {
+        const label = WEB_SOURCE_LABELS[item?.source] || 'Official Finance Source';
+        const title = String(item?.title || '').replace(/\s+/g, ' ').trim() || item?.url || '(untitled)';
+        const url = String(item?.url || '');
+        const desc = String(item?.description || '').replace(/\s+/g, ' ').trim().slice(0, descLimit);
+        return `[${i + 1}] [${label}] ${title}\n    ${url}\n    ${desc}`;
+    }).join('\n');
+}
+
+/* Position of the block inside every template: after the sentiment/news data,
+   before the CRITICAL NOTE. Returns '' never — it is always a usable string, so
+   a caller that forgets webSearch still gets the honest one-liner. */
+function buildWebBlock(webSearch, iso) {
+    if (!webSearch || webSearch.ok !== true || !Array.isArray(webSearch.items) || !webSearch.items.length) {
+        return webUnavailableLine(webSearch?.error);
+    }
+    const stamp = String(iso || new Date().toISOString());
+    const todayIso = stamp.slice(0, 10);
+    /* The Barchart path depends on which query plan produced these items: a
+       tokenized-stock run returns /stocks/quotes/ pages, so naming the crypto
+       path here would misdescribe the provenance the model is told to cite.
+       Anything without a plan field (older/cached result objects) stays crypto. */
+    const barchartPath = webSearch.plan === 'stock' ? 'barchart.com/stocks/quotes' : 'barchart.com/crypto/quotes';
+    const header = `=== LIVE WEB SEARCH RESULTS — OFFICIAL SOURCES (fetched: ${stamp}, region: US, language: en) ===\n`
+        + `Sources restricted to: finance.yahoo.com/quote | ${barchartPath} | perplexity.ai/finance\n`;
+    const rules = webUsageRules(todayIso);
+    /* Descriptions are the only variable-sized part, so shrink them in place
+       rather than dropping items or letting the mandatory rules overflow. */
+    let descLimit = SNIPPET_LIMIT_IN_PROMPT;
+    let body = webItemLines(webSearch.items, descLimit);
+    while (header.length + body.length + rules.length + 2 > WEB_BLOCK_LIMIT && descLimit > 40) {
+        descLimit = Math.max(40, Math.floor(descLimit * 0.7));
+        body = webItemLines(webSearch.items, descLimit);
+    }
+    return `${header}${body}\n${rules}`.slice(0, WEB_BLOCK_LIMIT);
+}
+
+export function buildPrompt({ cryptoInfo, cryptoData, analysisType, language, webSearch }) {
     // دریافت اطلاعات زمانی فعلی
     const timeContext = getAnalysisTimeContext(language);
 
@@ -261,6 +330,10 @@ export function buildPrompt({ cryptoInfo, cryptoData, analysisType, language }) 
     if (!(cryptoData.mayerMultiple > 0)) missing.push('Mayer');
     if (!(cryptoData.puellMultiple > 0)) missing.push('Puell');
     if (!rawIndicators) missing.push(language === 'fa' ? 'همه شاخص‌های تکنیکال (RSI، MACD، باندهای بولینگر، VWAP، سطوح حمایت/مقاومت، POC، فیبوناچی)' : 'every technical indicator (RSI, MACD, Bollinger Bands, VWAP, support/resistance, POC, Fibonacci)');
+    /* Provenance status of the web block itself, so dataNote stays honest when
+       the search was skipped or failed instead of silently omitting the block. */
+    const webStatus = webSearch?.ok ? 'ok' : (webSearch?.error === 'NO_SEARCH_KEY' ? 'skipped' : 'failed');
+    if (webStatus !== 'ok') missing.push(language === 'fa' ? 'نتایج جستجوی وب زنده' : 'live web search results');
     const missingList = missing.length ? missing.join(language === 'fa' ? '، ' : ', ') : (language === 'fa' ? 'موردی' : 'none');
 
     const dataNote = (language === 'fa') ?
@@ -272,6 +345,10 @@ export function buildPrompt({ cryptoInfo, cryptoData, analysisType, language }) 
     - Do not invent values for any of them and do not quote them from any other source; every number must come from the data in this prompt only.
     - State briefly and explicitly that these metrics are unavailable for this asset, then base the analysis on the data that is present (technical indicators, price, volume, market sentiment).
     - Do not interpret missing on-chain data as a weakness or risk of the network; it is purely a data-source limitation.`;
+
+    /* Inserted after the sentiment/news data section and before the CRITICAL
+       NOTE in all four templates — a pure block insertion, no restructuring. */
+    const webBlock = buildWebBlock(webSearch, timeContext.iso);
 
 
     if (language === 'fa') {
@@ -336,6 +413,8 @@ export function buildPrompt({ cryptoInfo, cryptoData, analysisType, language }) 
 
     🧠 **شاخص احساسات بازار:**
     - شاخص ترس و طمع: ${cryptoData.fearGreedIndex ?? na} (${getFearGreedText(cryptoData.fearGreedIndex, language)})
+
+    ${webBlock}
 
     **توجه بسیار مهم:** این تحلیل در تاریخ ${timeContext.currentDate} و ساعت ${timeContext.currentTime} انجام شده است. لطفاً تحلیل خود را کاملاً بر اساس شرایط فعلی بازار و داده‌های ارائه شده در این تاریخ انجام دهید. از اشاره به رویدادها یا شرایط تاریخی گذشته خودداری کنید.
 
@@ -428,6 +507,8 @@ export function buildPrompt({ cryptoInfo, cryptoData, analysisType, language }) 
     🧠 **شاخص‌های کلان بازار:**
     - شاخص ترس و طمع: ${cryptoData.fearGreedIndex ?? na} (${getFearGreedText(cryptoData.fearGreedIndex, language)})
     - دامیننس بیت‌کوین: N/A (داده در دسترس نیست)
+
+    ${webBlock}
 
     **توجه بسیار مهم:** این تحلیل در تاریخ ${timeContext.currentDate} و ساعت ${timeContext.currentTime} انجام شده است. لطفاً تحلیل بلندمدت خود را با توجه به شرایط فعلی بازار و چشم‌انداز آینده بر اساس وضعیت کنونی ارائه دهید.
 
@@ -535,6 +616,8 @@ export function buildPrompt({ cryptoInfo, cryptoData, analysisType, language }) 
     🧠 **Market Sentiment:**
     - Fear & Greed Index: ${cryptoData.fearGreedIndex ?? na} (${getFearGreedText(cryptoData.fearGreedIndex, language)})
 
+    ${webBlock}
+
     **CRITICAL NOTE:**
     This analysis was performed on ${timeContext.currentDate} at ${timeContext.currentTime}. Please provide your analysis entirely based on current market conditions and data as of this date. Do not refer to past historical events or conditions.
 
@@ -627,6 +710,8 @@ export function buildPrompt({ cryptoInfo, cryptoData, analysisType, language }) 
     🧠 **Macro Market Indicators:**
     - Fear & Greed Index: ${cryptoData.fearGreedIndex ?? na} (${getFearGreedText(cryptoData.fearGreedIndex, language)})
     - Bitcoin Dominance: N/A (Data not available)
+
+    ${webBlock}
 
     **CRITICAL NOTE:**
     This analysis was performed on ${timeContext.currentDate} at ${timeContext.currentTime}. Please provide your long-term analysis considering current market conditions and future outlook based on the present situation.

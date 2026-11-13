@@ -1,9 +1,11 @@
 import { MODELS, CRYPTOS, cryptoInfo } from './catalog.js';
 import { T, applyLanguage } from './i18n.js';
-import { loadApiKey, saveApiKey, loadTheme, saveTheme, loadLang, saveLang } from './config.js';
+import { loadApiKey, saveApiKey, loadWebSearchKey, saveWebSearchKey, loadTheme, saveTheme, loadLang, saveLang } from './config.js';
 import { fetchRealTimeData, fetchHistoricalData, enrichFromCoinGecko } from './services/market.js';
 import { runAIAnalysis } from './services/ai.js';
 import { fetchBlockchainData, calculateAdvancedNetworkMetrics, fetchFearGreedIndex, fetchCryptoNews, formatHashRate, getMetricClass, getNVTDescription, getMayerDescription, getPuellDescription, onchainSupportFor } from './services/blockchain.js';
+/* Independent of every other data service — see the module header. */
+import { runWebSearch } from './services/websearch.js';
 import { computeAllIndicators } from './analysis/indicators.js';
 import { buildPrompt } from './analysis/promptBuilder.js';
 import { initRipple, applyTheme, toast, revealCards } from './ui/fx.js';
@@ -15,6 +17,7 @@ const state = {
   lang: loadLang(),
   theme: loadTheme(),
   apiKey: loadApiKey(),
+  webSearchKey: loadWebSearchKey(),
   model: MODELS[0].id,
   crypto: CRYPTOS[0].c,
   analysisType: 'short',
@@ -60,6 +63,7 @@ function initChrome() {
   applyLanguage(state.lang);
   $('langText').textContent = state.lang === 'fa' ? 'English' : 'فارسی';
   $('apiKey').value = state.apiKey;
+  $('webSearchKey').value = state.webSearchKey;
 
   $('themeToggle').addEventListener('click', () => {
     state.theme = state.theme === 'dark' ? 'light' : 'dark';
@@ -82,15 +86,21 @@ function initChrome() {
   });
 
   $('keyEye').addEventListener('click', () => {
-    const input = $('apiKey');
-    const show = input.type === 'password';
-    input.type = show ? 'text' : 'password';
-    $('keyEye').querySelector('i').className = show ? 'fas fa-eye-slash' : 'fas fa-eye';
+    toggleSecret($('apiKey'), $('keyEye'));
+  });
+
+  $('webSearchKeyEye').addEventListener('click', () => {
+    toggleSecret($('webSearchKey'), $('webSearchKeyEye'));
   });
 
   $('apiKey').addEventListener('change', e => {
     state.apiKey = e.target.value.trim();
     saveApiKey(state.apiKey);
+  });
+
+  $('webSearchKey').addEventListener('change', e => {
+    state.webSearchKey = e.target.value.trim();
+    saveWebSearchKey(state.webSearchKey);
   });
 
   document.querySelectorAll('input[name="analysisType"]').forEach(r =>
@@ -108,6 +118,13 @@ function initChrome() {
   $('shareBtn').addEventListener('click', shareResults);
   initRipple();
   views.buildPipeline(state.lang);
+}
+
+function toggleSecret(input, button) {
+  const show = input.type === 'password';
+  input.type = show ? 'text' : 'password';
+  button.querySelector('i').className = show ? 'fas fa-eye-slash' : 'fas fa-eye';
+  button.setAttribute('aria-label', T[state.lang][show ? 'hideKey' : 'showKey']);
 }
 
 function setBusy(busy) {
@@ -138,6 +155,12 @@ function renderChart() {
   }
 }
 
+function searchStatusOf(webSearch) {
+  if (!webSearch) return null;
+  if (webSearch.ok) return 'ok';
+  return webSearch.error === 'NO_SEARCH_KEY' ? 'skipped' : 'failed';
+}
+
 function rerenderResults() {
   const d = state.data;
   /* Language can be toggled while an analysis is still in flight; renderStats
@@ -153,6 +176,8 @@ function rerenderResults() {
   views.renderBlockchain(d.blockchain, state.lang, { formatHashRate }, d.onchainSupport);
   views.renderMetrics({ nvtRatio: d.nvtRatio, mayerMultiple: d.mayerMultiple, puellMultiple: d.puellMultiple, onchainSupport: d.onchainSupport }, state.lang, { getMetricClass, getNVTDescription, getMayerDescription, getPuellDescription });
   if (d.news) views.renderNews(d.news, state.lang);
+  const searchStatus = searchStatusOf(d.webSearch);
+  if (searchStatus) views.renderSearch(d.webSearch.ok ? d.webSearch.items : [], searchStatus, state.lang);
   if (d.report) {
     views.renderReport(d.report, state.lang, modelLabel());
     views.renderRecommendation(d.report, state.lang);
@@ -175,6 +200,11 @@ async function startAnalysis() {
     return;
   }
   saveApiKey(state.apiKey);
+
+  /* Optional field: when it is empty the search step is skipped outright and
+     the run behaves exactly as it did before this feature existed. */
+  state.webSearchKey = $('webSearchKey').value.trim();
+  saveWebSearchKey(state.webSearchKey);
 
   state.running = true;
   setBusy(true);
@@ -238,10 +268,14 @@ async function startAnalysis() {
     // STEP 3+4: blockchain & news/f&G in parallel (non-fatal)
     views.setStep('chain', 'active');
     views.setStep('news', 'active');
-    const [bcRes, fgRes, newsRes] = await Promise.allSettled([
+    views.setStep('search', 'active');
+    const [bcRes, fgRes, newsRes, searchRes] = await Promise.allSettled([
       fetchBlockchainData({ cryptoInfo: info }),
       fetchFearGreedIndex(),
       fetchCryptoNews({ language: state.lang }),
+      /* Shares the batch so the ~1.5 s search latency overlaps the other
+         services instead of adding to the run. */
+      runWebSearch({ apiKey: state.webSearchKey, cryptoInfo: info, lang: state.lang }),
     ]);
     const support = onchainSupportFor(info.symbol);
     state.data.onchainSupport = support;
@@ -267,6 +301,24 @@ async function startAnalysis() {
     views.renderStats({ quote: state.data.quote, cryptoInfo: info, fearGreed: state.data.fearGreedIndex }, state.lang);
     views.renderNews(state.data.news, state.lang);
 
+    /* Search is the only step whose absence the user can choose, so a missing
+       key gets its own neutral card state and no toast at all. */
+    const webSearch = searchRes.status === 'fulfilled' && searchRes.value
+      ? searchRes.value
+      : { ok: false, error: 'SEARCH_FAILED' };
+    state.data.webSearch = webSearch;
+    const searchStatus = searchStatusOf(webSearch);
+    views.setStep('search', webSearch.ok ? 'done' : '');
+    views.renderSearch(webSearch.ok ? webSearch.items : [], searchStatus, state.lang);
+    if (searchStatus === 'failed') {
+      const dict = T[state.lang];
+      const notice = {
+        INVALID_SEARCH_KEY: [dict.searchToastInvalidKey, 'error'],
+        SEARCH_RATE_LIMIT: [dict.searchToastRateLimit, 'info'],
+      }[webSearch.error] || [dict.searchToastFailed, 'info'];
+      toast(notice[0], notice[1]);
+    }
+
     // STEP 5: AI report
     views.setStep('ai', 'active');
     const prompt = buildPrompt({
@@ -274,6 +326,7 @@ async function startAnalysis() {
       cryptoData: state.data,
       analysisType: state.analysisType,
       language: state.lang,
+      webSearch,
     });
     const ctrl = new AbortController();
     /* The exchange is now up to three stitched requests (initial + two automatic
