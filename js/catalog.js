@@ -14,6 +14,7 @@ export const MODELS = [
   { id: 'recursive/flint-v1.0:free', label: 'Recursive Flint (Free)', icon: 'icons/ai/Recursive.png', paid: false },
   { id: 'liquid/lfm-3-1.7b:free', label: 'LFM3-1.7B (free)', icon: 'icons/ai/Liquid.png', paid: false },
   { id: 'liquid/lfm-2.5-2.6b:free', label: 'LFM2.5-2.6B (Free)', icon: 'icons/ai/Liquid.png', paid: false },
+  { id: 'inclusionai/ling-3.2-flash:free', label: 'Ling 3.2 Flash (free)', icon: 'icons/ai/Liquid.png', paid: false },
   { id: 'xingchen-agi/xing4.0-29b-a4b:free', label: 'Xing4.0 29B A4B (Free)', icon: 'icons/ai/XingChen.png', paid: false },
   { id: 'baidu/ernie-5.5-flash-preview:free', label: 'ERNIE-5.5-Flash-Preview (free)', icon: 'icons/ai/Baidu.png', paid: false },
   { id: 'dots-studio/dots-3-note-preview:free', label: 'Dots3-Note Preview (free)', icon: 'icons/ai/DotsStudio.png', paid: false },
@@ -37,7 +38,7 @@ export const MODELS = [
   { id: '~x-ai/grok-latest', label: 'Grok Latest', icon: 'icons/ai/grok.png', paid: true },
   { id: '~unbiased/pareto-latest', label: 'Pareto Latest', icon: 'icons/ai/Pareto.png', paid: true },
   { id: 'minimax/minimax-m3.1-flash', label: 'MiniMax M3.1 Flash', icon: 'icons/ai/minimax.png', paid: true },
-  { id: 'qwen/qwen3.8-max-0902', label: 'Qwen3.8 Max', icon: 'icons/ai/qwen.png', paid: true },
+  { id: 'qwen/qwen4-max', label: 'Qwen4 Max', icon: 'icons/ai/qwen.png', paid: true },
   { id: 'qwen/qwen3.8-flash', label: 'Qwen3.8 Flash', icon: 'icons/ai/qwen.png', paid: true },
 ];
 
