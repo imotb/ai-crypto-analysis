@@ -6,6 +6,8 @@ import { runAIAnalysis } from './services/ai.js';
 import { fetchBlockchainData, calculateAdvancedNetworkMetrics, fetchFearGreedIndex, fetchCryptoNews, formatHashRate, getMetricClass, getNVTDescription, getMayerDescription, getPuellDescription, onchainSupportFor } from './services/blockchain.js';
 /* Independent of every other data service — see the module header. */
 import { runWebSearch } from './services/websearch.js';
+/* Same key, same non-fatal contract: Reader pages for the analyst forecast. */
+import { runAnalystForecast } from './services/forecast.js';
 import { computeAllIndicators } from './analysis/indicators.js';
 import { buildPrompt } from './analysis/promptBuilder.js';
 import { initRipple, applyTheme, toast, revealCards } from './ui/fx.js';
@@ -273,13 +275,17 @@ async function startAnalysis() {
     views.setStep('chain', 'active');
     views.setStep('news', 'active');
     views.setStep('search', 'active');
-    const [bcRes, fgRes, newsRes, searchRes] = await Promise.allSettled([
+    const [bcRes, fgRes, newsRes, searchRes, forecastRes] = await Promise.allSettled([
       fetchBlockchainData({ cryptoInfo: info }),
       fetchFearGreedIndex(),
       fetchCryptoNews({ language: state.lang }),
       /* Shares the batch so the ~1.5 s search latency overlaps the other
          services instead of adding to the run. */
       runWebSearch({ apiKey: state.webSearchKey, cryptoInfo: info, lang: state.lang }),
+      /* Reader pages take longer than a search query, so the forecast joins the
+         same batch: its latency hides behind the other services and a failure
+         costs one card, never the report. */
+      runAnalystForecast({ apiKey: state.webSearchKey, cryptoInfo: info }),
     ]);
     const support = onchainSupportFor(info.symbol);
     state.data.onchainSupport = support;
@@ -323,6 +329,14 @@ async function startAnalysis() {
       toast(notice[0], notice[1]);
     }
 
+    /* No toast and no step of its own: the forecast is one more data card, and
+       its empty state is already legible inside the card. */
+    const forecast = forecastRes.status === 'fulfilled' && forecastRes.value
+      ? forecastRes.value
+      : { ok: false, error: 'FORECAST_FAILED' };
+    state.data.forecast = forecast;
+    views.renderForecast(forecast, state.lang);
+
     // STEP 5: AI report
     views.setStep('ai', 'active');
     const prompt = buildPrompt({
@@ -331,6 +345,7 @@ async function startAnalysis() {
       analysisType: state.analysisType,
       language: state.lang,
       webSearch,
+      forecast,
     });
     const ctrl = new AbortController();
     /* The exchange is now up to three stitched requests (initial + two automatic

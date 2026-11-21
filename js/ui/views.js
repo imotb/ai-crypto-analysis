@@ -94,7 +94,7 @@ export function resetPipeline() {
 
 /* ---------- skeletons / errors ---------- */
 
-const CARD_CONTAINERS = ['indicatorsGrid', 'levelsContent', 'volumeProfileContent', 'fibonacciContent', 'blockchainContent', 'metricsContent', 'newsContent', 'reportContent'];
+const CARD_CONTAINERS = ['indicatorsGrid', 'levelsContent', 'volumeProfileContent', 'fibonacciContent', 'blockchainContent', 'metricsContent', 'forecastContent', 'newsContent', 'reportContent'];
 
 export function showResultsSkeleton() {
   $('emptyState').hidden = true;
@@ -109,6 +109,7 @@ export function showResultsSkeleton() {
   setHTML($('fibonacciContent'), Array.from({ length: 7 }, () => '<div class="sk" style="height:22px;margin:6px 0"></div>').join(''));
   setHTML($('blockchainContent'), Array.from({ length: 5 }, () => skeletonBlock(56)).join(''));
   setHTML($('metricsContent'), Array.from({ length: 3 }, () => skeletonBlock(56)).join(''));
+  setHTML($('forecastContent'), skeletonBlock(96));
   setHTML($('newsContent'), Array.from({ length: 4 }, () => skeletonBlock(74)).join(''));
   setHTML($('webSearchContent'), Array.from({ length: 3 }, () => skeletonBlock(74)).join(''));
   setHTML($('reportContent'), skeletonLines(10));
@@ -389,7 +390,7 @@ export function renderNews(news, lang) {
 
 /* ---------- live web search ---------- */
 
-const SEARCH_SOURCE_LABEL = { yahoo: 'searchSourceYahoo', barchart: 'searchSourceBarchart', perplexity: 'searchSourcePerplexity' };
+const SEARCH_SOURCE_LABEL = { yahoo: 'searchSourceYahoo', barchart: 'searchSourceBarchart', perplexity: 'searchSourcePerplexity', tipranks: 'searchSourceTipranks', cnn: 'searchSourceCnn' };
 
 /* status: 'ok' | 'skipped' | 'failed'. Same security pattern as renderNews —
    the title, snippet and URL all come from an external search engine, so every
@@ -436,6 +437,535 @@ export function renderSearch(items, status, lang) {
     else time.remove();
     node.querySelector('.search-desc').textContent = it.description || '';
   });
+}
+
+/* ---------- analyst forecast ---------- */
+
+/* Numbers arrive from two different pages and either can be missing, so every
+   builder below renders only what it has. Nothing here uses innerHTML — the
+   strings are scraped from third-party pages — and the charts are plain SVG
+   (createElementNS), so the card keeps the project's zero-dependency rule. */
+const FC_MONEY = v => `$${formatPrice(v)}`;
+
+/* Number(null) is 0 and 0 is finite, so an absent field would otherwise be
+   plotted and labelled $0.00. Every gate in this section goes through this. */
+const hasValue = v => v !== null && v !== undefined && v !== '' && Number.isFinite(Number(v));
+
+const SVG_NS = 'http://www.w3.org/2000/svg';
+
+function svgNode(tag, attrs) {
+  const el = document.createElementNS(SVG_NS, tag);
+  for (const [key, value] of Object.entries(attrs || {})) {
+    if (value === null || value === undefined) continue;
+    el.setAttribute(key, String(value));
+  }
+  return el;
+}
+
+function svgText(value, attrs) {
+  const t = svgNode('text', attrs);
+  t.textContent = value;
+  return t;
+}
+
+/* In-chart tooltip: <title> is the only native SVG tooltip, and it keeps the
+   gauge readable without any overlay machinery of our own. */
+function svgTitle(parent, text) {
+  const t = svgNode('title', {});
+  t.textContent = text;
+  parent.insertBefore(t, parent.firstChild);
+  return parent;
+}
+
+function fcSigned(pct) {
+  return `${pct >= 0 ? '+' : '−'}${Math.abs(Number(pct)).toFixed(2)}%`;
+}
+
+/* Pure, DOM-free layout (§4.1). The domain spans ALL six numbers, not just the
+   targets, which is what keeps the current price off the hard left edge the V5
+   card produced whenever the 52-week low sat below every target. */
+export function fcGaugeLayout(f) {
+  if (!f) return null;
+  const fields = ['week52Low', 'week52High', 'currentPrice', 'targetLow', 'targetAvg', 'targetHigh'];
+  const values = fields.map(k => f[k]).filter(hasValue).map(Number);
+  if (values.length < 2) return null;
+  let lo = Math.min(...values);
+  let hi = Math.max(...values);
+  /* 4 % of air on each side; identical values would give a zero spread, so fall
+     back to 4 % of the magnitude and never to zero. */
+  const pad = ((hi - lo) || Math.abs(hi) || 1) * 0.04;
+  lo -= pad;
+  hi += pad;
+  const span = hi - lo;
+  const pct = v => Math.min(1, Math.max(0, (Number(v) - lo) / span));
+  const pins = [
+    { key: 'targetLow', value: f.targetLow },
+    { key: 'targetAvg', value: f.targetAvg },
+    { key: 'targetHigh', value: f.targetHigh },
+    { key: 'current', value: f.currentPrice },
+  ].filter(p => hasValue(p.value)).map(p => ({ key: p.key, value: Number(p.value), pct: pct(p.value) }));
+  const band52 = hasValue(f.week52Low) && hasValue(f.week52High)
+    ? { low: Number(f.week52Low), high: Number(f.week52High), lowPct: pct(f.week52Low), highPct: pct(f.week52High) }
+    : null;
+  const zone = hasValue(f.targetLow) && hasValue(f.targetHigh)
+    ? { low: Number(f.targetLow), high: Number(f.targetHigh), lowPct: pct(f.targetLow), highPct: pct(f.targetHigh) }
+    : null;
+  return { min: lo, max: hi, band52, zone, pins };
+}
+
+/* Pure (§5.1): circumference for r = 48, one entry per non-zero side, the last
+   one absorbing the rounding so the ring always closes. */
+export function fcDonutSegments(buy, hold, sell) {
+  const raw = [buy, hold, sell].map(v => (hasValue(v) ? Number(v) : null));
+  if (raw.every(v => v === null)) return null;
+  const nums = raw.map(v => (v === null ? 0 : v));
+  const total = nums.reduce((a, b) => a + b, 0);
+  if (total === 0) return [];
+  const C = 2 * Math.PI * 48;
+  const keys = ['buy', 'hold', 'sell'];
+  const nonZero = nums.filter(v => v > 0).length;
+  /* A gap between segments only reads well when there is more than one; with a
+     16/0/0 vote the single segment must become a full ring, gap-free. */
+  const gap = nonZero > 1 ? C * 0.018 : 0;
+  const out = [];
+  let cum = 0;
+  keys.forEach((key, i) => {
+    if (!(nums[i] > 0)) return;
+    const isLast = out.length === nonZero - 1;
+    const ratio = isLast ? 1 - cum : nums[i] / total;
+    out.push({
+      key,
+      value: nums[i],
+      ratio,
+      dash: Math.max(0.0001, ratio * C - gap),
+      offset: -(cum * C),
+    });
+    cum += ratio;
+  });
+  return out;
+}
+
+/* Pure (§6): where the current price sits inside the 52-week range. */
+export function fc52wPosition(current, low, high) {
+  if (!hasValue(current) || !hasValue(low) || !hasValue(high)) return null;
+  const c = Number(current);
+  const l = Number(low);
+  const h = Number(high);
+  if (!(h > l)) return null;
+  return Math.min(1, Math.max(0, (c - l) / (h - l)));
+}
+
+
+/* Gauge geometry, in viewBox units. The SVG scales to the panel, so these are
+   proportions rather than pixels; x0/x1 leave room for the end axis labels. */
+const FC_G = { w: 340, h: 152, x0: 22, x1: 318, axisY: 86, bandY: 98, bandH: 16, zoneY: 42, zoneH: 44, pinShort: 24, pinTall: 44 };
+const fcGx = pct => FC_G.x0 + pct * (FC_G.x1 - FC_G.x0);
+/* Keeps an in-chart chip or label from running past the drawn axis. */
+const fcClampX = (x, half) => Math.min(Math.max(x, FC_G.x0 + half), FC_G.x1 - half);
+
+/* The average-implied move: trust the page's own number, else derive it. */
+function fcUpsidePct(f) {
+  if (hasValue(f.upsidePct)) return Number(f.upsidePct);
+  if (hasValue(f.currentPrice) && hasValue(f.targetAvg) && Number(f.currentPrice) > 0) {
+    return (Number(f.targetAvg) / Number(f.currentPrice) - 1) * 100;
+  }
+  return null;
+}
+
+/* §4.3 — the sentence is built from the fields that actually exist. The i18n
+   value is only the leading label; the numbers stay plain `$` figures so one
+   aria string serves both dictionaries. */
+function fcGaugeAria(f, dict) {
+  const parts = [];
+  if (hasValue(f.currentPrice)) parts.push(`${dict.currentPrice} ${FC_MONEY(f.currentPrice)}`);
+  const t = [
+    ['targetLow', dict.forecastLowestTarget],
+    ['targetAvg', dict.forecastAverageTarget],
+    ['targetHigh', dict.forecastHighestTarget],
+  ].filter(([k]) => hasValue(f[k])).map(([k, label]) => `${label} ${FC_MONEY(f[k])}`);
+  if (t.length) parts.push(t.join(' · '));
+  if (hasValue(f.week52Low) && hasValue(f.week52High)) {
+    parts.push(`${dict.forecastWeek52} ${FC_MONEY(f.week52Low)} – ${FC_MONEY(f.week52High)}`);
+  }
+  return `${dict.forecastAriaGauge} ${parts.join(' · ')}`.trim();
+}
+
+function fcPanelHead(dict, key) {
+  const panel = document.createElement('div');
+  panel.className = 'fc-panel';
+  const title = document.createElement('h3');
+  title.className = 'fc-panel-title';
+  title.textContent = dict[key];
+  panel.append(title);
+  return panel;
+}
+
+/* §4 — price-target gauge. Everything is relative to the padded domain the pure
+   seam produced, so the current price is never pinned to an edge again. */
+function fcGaugePanel(f, dict) {
+  const layout = fcGaugeLayout(f);
+  if (!layout) return null;
+  const panel = fcPanelHead(dict, 'forecastPanelTargets');
+  panel.classList.add('fc-gauge');
+
+  const G = FC_G;
+  const pin = key => layout.pins.find(p => p.key === key) || null;
+  const now = pin('current');
+  const avg = pin('targetAvg');
+  const upside = fcUpsidePct(f);
+  /* With no targets the upper rows of the gauge are never drawn, so the viewBox
+     is cropped to the rows that actually carry marks. */
+  const top = layout.zone || avg || upside !== null ? 0 : 40;
+  const svg = svgNode('svg', {
+    viewBox: `0 ${top} ${FC_G.w} ${FC_G.h - top}`,
+    class: 'fc-gauge-svg',
+    role: 'img',
+    'aria-label': fcGaugeAria(f, dict),
+    focusable: 'false',
+  });
+  svg.setAttribute('dir', 'ltr');
+
+  if (layout.band52) {
+    const bx = fcGx(layout.band52.lowPct);
+    const bw = Math.max(2, fcGx(layout.band52.highPct) - bx);
+    svg.append(svgTitle(
+      svgNode('rect', { class: 'fc-band', x: bx, y: G.bandY, width: bw, height: G.bandH, rx: G.bandH / 2 }),
+      `${dict.forecastWeek52} ${FC_MONEY(layout.band52.low)} – ${FC_MONEY(layout.band52.high)}`,
+    ));
+    svg.append(svgText(FC_MONEY(layout.band52.low), { class: 'fc-band-label', x: bx, y: G.bandY + G.bandH + 10, 'text-anchor': 'start' }));
+    svg.append(svgText(FC_MONEY(layout.band52.high), { class: 'fc-band-label', x: bx + bw, y: G.bandY + G.bandH + 10, 'text-anchor': 'end' }));
+  }
+
+  if (layout.zone) {
+    const zx = fcGx(layout.zone.lowPct);
+    const zw = Math.max(2, fcGx(layout.zone.highPct) - zx);
+    svg.append(svgTitle(
+      svgNode('rect', { class: 'fc-zone', x: zx, y: G.zoneY, width: zw, height: G.zoneH, rx: 6 }),
+      `${dict.forecastPanelTargets} ${FC_MONEY(layout.zone.low)} – ${FC_MONEY(layout.zone.high)}`,
+    ));
+  }
+
+  svg.append(svgNode('line', { class: 'fc-axis', x1: G.x0, y1: G.axisY, x2: G.x1, y2: G.axisY }));
+  /* Axis ends are the padded domain, not a quoted price, so they get a plain
+     two-decimal figure rather than the raw arithmetic residue. */
+  const fcAxisMoney = v => FC_MONEY(Math.round(v * 100) / 100);
+  svg.append(svgText(fcAxisMoney(layout.min), { class: 'fc-axis-label', x: G.x0, y: G.h - 4, 'text-anchor': 'start' }));
+  svg.append(svgText(fcAxisMoney(layout.max), { class: 'fc-axis-label', x: G.x1, y: G.h - 4, 'text-anchor': 'end' }));
+
+  for (const d of [
+    { p: pin('targetLow'), label: dict.forecastLowestTarget, cls: 'fc-pin-low' },
+    { p: pin('targetHigh'), label: dict.forecastHighestTarget, cls: 'fc-pin-high' },
+    { p: avg, label: dict.forecastAverageTarget, cls: 'fc-pin-avg' },
+  ]) {
+    if (!d.p) continue;
+    const isAvg = d.cls === 'fc-pin-avg';
+    const x = fcGx(d.p.pct);
+    const top = G.axisY - (isAvg ? G.pinTall : G.pinShort);
+    const g = svgNode('g', { class: `fc-pin ${d.cls}` });
+    g.append(svgNode('line', { class: 'fc-pin-line', x1: x, y1: G.axisY, x2: x, y2: top }));
+    g.append(svgNode('circle', { class: 'fc-pin-dot', cx: x, cy: top, r: isAvg ? 4 : 3 }));
+    if (!isAvg) g.append(svgText(FC_MONEY(d.p.value), { class: 'fc-pin-value', x, y: top - 5, 'text-anchor': 'middle' }));
+    const titleText = isAvg && upside !== null
+      ? `${d.label} ${FC_MONEY(d.p.value)} (${dict.forecastUpside} ${fcSigned(upside)})`
+      : `${d.label} ${FC_MONEY(d.p.value)}`;
+    svg.append(svgTitle(g, titleText));
+  }
+
+  if (avg) {
+    const text = FC_MONEY(avg.value);
+    const cw = 10 + text.length * 5.1;
+    const cx = fcClampX(fcGx(avg.pct), cw / 2);
+    const chip = svgNode('g', { class: 'fc-avg-chip' });
+    chip.append(svgNode('rect', { x: cx - cw / 2, y: 24, width: cw, height: 17, rx: 8 }));
+    chip.append(svgText(text, { class: 'fc-avg-chip-text', x: cx, y: 36, 'text-anchor': 'middle' }));
+    svg.append(svgTitle(chip, `${dict.forecastAverageTarget} ${text}${upside !== null ? ` (${dict.forecastUpside} ${fcSigned(upside)})` : ''}`));
+  }
+
+  if (now) {
+    const x = fcGx(now.pct);
+    const g = svgNode('g', { class: 'fc-now' });
+    if (layout.band52) {
+      g.append(svgNode('line', { class: 'fc-now-drop', x1: x, y1: G.axisY + 7, x2: x, y2: G.bandY + G.bandH / 2 }));
+    }
+    g.append(svgNode('path', {
+      class: 'fc-now-diamond',
+      d: `M ${x} ${G.axisY - 6} L ${x + 6} ${G.axisY} L ${x} ${G.axisY + 6} L ${x - 6} ${G.axisY} Z`,
+    }));
+    g.append(svgText(FC_MONEY(now.value), {
+      class: 'fc-now-label', x: fcClampX(x + 9, 12), y: G.bandY + G.bandH / 2 + 3.5, 'text-anchor': 'start',
+    }));
+    svg.append(svgTitle(g, `${dict.currentPrice} ${FC_MONEY(now.value)}`));
+  }
+
+  if (now && avg && upside !== null && Math.abs(now.pct - avg.pct) > 0.03) {
+    const xa = fcGx(now.pct);
+    const xb = fcGx(avg.pct);
+    const mid = (xa + xb) / 2;
+    svg.append(svgNode('path', { class: 'fc-link', d: `M ${xa} ${G.axisY - 9} L ${xa} 13 L ${xb} 13 L ${xb} 24` }));
+    const text = fcSigned(upside);
+    const pw = 12 + text.length * 5.1;
+    const pill = svgNode('g', { class: `fc-pill ${upside >= 0 ? 'is-up' : 'is-down'}` });
+    pill.append(svgNode('rect', { x: mid - pw / 2, y: 5, width: pw, height: 16, rx: 8 }));
+    pill.append(svgText(text, { class: 'fc-pill-text', x: mid, y: 16.5, 'text-anchor': 'middle' }));
+    svg.append(svgTitle(pill, `${dict.forecastUpside} ${text}`));
+  }
+
+  panel.append(svg);
+  return panel;
+}
+
+const FC_DONUT_C = 2 * Math.PI * 48;
+
+function fcSegLabel(dict, key) {
+  return key === 'buy' ? dict.forecastBuy : key === 'hold' ? dict.forecastHold : dict.forecastSell;
+}
+
+/* §5 — donut + merged legend, or the CNN percentage case, or one muted line. */
+function fcConsensusPanel(f, dict) {
+  const segs = fcDonutSegments(f.buy, f.hold, f.sell);
+  const pcts = [f.buyPct, f.holdPct, f.sellPct];
+  const panel = fcPanelHead(dict, 'forecastPanelConsensus');
+  panel.classList.add('fc-consensus');
+
+  if (segs && segs.length) {
+    const body = document.createElement('div');
+    body.className = 'fc-donut-body';
+
+    const wrap = document.createElement('div');
+    wrap.className = 'fc-donut-wrap';
+    const ariaParts = segs.map(s => `${fcSegLabel(dict, s.key)} ${s.value} (${Math.round(s.ratio * 100)}%)`);
+    const svg = svgNode('svg', {
+      viewBox: '0 0 120 120',
+      class: 'fc-donut',
+      role: 'img',
+      'aria-label': `${dict.forecastAriaDonut} ${[f.rating ? String(f.rating).toUpperCase() : '', ...ariaParts].filter(Boolean).join(' · ')}`,
+      focusable: 'false',
+    });
+    svg.append(svgNode('circle', { class: 'fc-donut-track', cx: 60, cy: 60, r: 48, fill: 'none' }));
+    for (const s of segs) {
+      const seg = svgNode('circle', {
+        class: `fc-donut-seg fc-seg-${s.key}`,
+        cx: 60, cy: 60, r: 48, fill: 'none',
+        'stroke-dasharray': `${s.dash.toFixed(4)} ${(FC_DONUT_C - s.dash).toFixed(4)}`,
+        'stroke-dashoffset': s.offset.toFixed(4),
+        transform: 'rotate(-90 60 60)',
+      });
+      /* The reveal states live in CSS, so the numbers travel as custom
+         properties and the attributes stay a no-CSS fallback. */
+      seg.style.setProperty('--seg-dash', `${s.dash.toFixed(4)} ${(FC_DONUT_C - s.dash).toFixed(4)}`);
+      seg.style.setProperty('--dash-len', s.dash.toFixed(4));
+      seg.style.setProperty('--off', s.offset.toFixed(4));
+      svg.append(svgTitle(seg, `${fcSegLabel(dict, s.key)} ${s.value} — ${Math.round(s.ratio * 100)}%`));
+    }
+    wrap.append(svg);
+
+    const center = document.createElement('div');
+    center.className = 'fc-donut-center';
+    if (f.rating) {
+      const word = document.createElement('span');
+      word.className = 'fc-donut-rating';
+      word.textContent = String(f.rating).toUpperCase();
+      center.append(word);
+    }
+    if (hasValue(f.analysts)) {
+      const count = document.createElement('span');
+      count.className = 'fc-donut-count num';
+      count.setAttribute('dir', 'ltr');
+      count.textContent = `${f.analysts} ${dict.forecastAnalysts}`;
+      center.append(count);
+    }
+    wrap.append(center);
+    body.append(wrap);
+
+    const legend = document.createElement('ul');
+    legend.className = 'fc-legend';
+    for (const s of segs) {
+      const row = document.createElement('li');
+      row.className = 'fc-legend-row';
+      const dot = document.createElement('span');
+      dot.className = `fc-dot fc-dot-${s.key}`;
+      const label = document.createElement('span');
+      label.className = 'fc-legend-label';
+      label.textContent = fcSegLabel(dict, s.key);
+      const count = document.createElement('span');
+      count.className = 'fc-legend-count num';
+      count.setAttribute('dir', 'ltr');
+      count.textContent = String(s.value);
+      const pct = document.createElement('span');
+      pct.className = 'fc-legend-pct num';
+      pct.setAttribute('dir', 'ltr');
+      pct.textContent = `${Math.round(s.ratio * 100)}%`;
+      row.append(dot, label, count, pct);
+      legend.append(row);
+    }
+    body.append(legend);
+    panel.append(body);
+    return panel;
+  }
+
+  if (pcts.some(hasValue)) {
+    /* §5.5 — CNN publishes percentages, not counts: a labelled split bar. */
+    const total = pcts.filter(hasValue).reduce((a, v) => a + Number(v), 0);
+    const bar = document.createElement('div');
+    bar.className = 'fc-cnn';
+    const caption = document.createElement('p');
+    caption.className = 'fc-cnn-caption';
+    caption.textContent = dict.forecastCnnSplit;
+    bar.append(caption);
+    const track = document.createElement('div');
+    track.className = 'fc-cnn-bar';
+    track.setAttribute('dir', 'ltr');
+    const keys = ['buy', 'hold', 'sell'];
+    pcts.forEach((v, i) => {
+      if (!hasValue(v) || Number(v) <= 0 || !(total > 0)) return;
+      const seg = document.createElement('span');
+      seg.className = `fc-cnn-seg fc-seg-${keys[i]}`;
+      seg.style.width = `${(Number(v) / total) * 100}%`;
+      seg.title = `${fcSegLabel(dict, keys[i])} ${Number(v)}%`;
+      track.append(seg);
+    });
+    bar.append(track);
+    const legend = document.createElement('ul');
+    legend.className = 'fc-cnn-legend';
+    pcts.forEach((v, i) => {
+      if (!hasValue(v)) return;
+      const row = document.createElement('li');
+      row.className = 'fc-legend-row';
+      const dot = document.createElement('span');
+      dot.className = `fc-dot fc-dot-${keys[i]}`;
+      const label = document.createElement('span');
+      label.className = 'fc-legend-label';
+      label.textContent = fcSegLabel(dict, keys[i]);
+      const pct = document.createElement('span');
+      pct.className = 'fc-legend-pct num';
+      pct.setAttribute('dir', 'ltr');
+      pct.textContent = `${Number(v)}%`;
+      row.append(dot, label, pct);
+      legend.append(row);
+    });
+    bar.append(legend);
+    panel.append(bar);
+    return panel;
+  }
+
+  const muted = document.createElement('p');
+  muted.className = 'fc-muted';
+  muted.textContent = dict.forecastNoRatings;
+  panel.append(muted);
+  return panel;
+}
+
+function fcStat(label, value, opts) {
+  const tile = document.createElement('div');
+  tile.className = `fc-stat${opts && opts.cls ? ` ${opts.cls}` : ''}`;
+  const l = document.createElement('span');
+  l.className = 'fc-stat-label';
+  l.textContent = label;
+  const v = document.createElement('span');
+  v.className = 'fc-stat-value num';
+  v.textContent = value;
+  if (opts && opts.dirLtr) v.setAttribute('dir', 'ltr');
+  if (opts && opts.title) v.title = opts.title;
+  tile.append(l, v);
+  return tile;
+}
+
+/* §6 — four tiles, plus the 52-week position tile when it is computable. */
+function fcStatsPanel(f, dict) {
+  const block = document.createElement('div');
+  block.className = 'fc-stats';
+  if (hasValue(f.currentPrice)) block.append(fcStat(dict.currentPrice, FC_MONEY(f.currentPrice), { dirLtr: true }));
+
+  const upside = fcUpsidePct(f);
+  if (upside !== null && hasValue(f.targetAvg)) {
+    block.append(fcStat(dict.forecastUpside, fcSigned(upside), { dirLtr: true, cls: upside >= 0 ? 'is-up' : 'is-down' }));
+  }
+
+  if (hasValue(f.analysts)) block.append(fcStat(dict.forecastAnalysts, String(f.analysts), { dirLtr: true }));
+
+  if (hasValue(f.week52Low) && hasValue(f.week52High)) {
+    const range = `${FC_MONEY(f.week52Low)} – ${FC_MONEY(f.week52High)}`;
+    block.append(fcStat(dict.forecastWeek52, range, { dirLtr: true }));
+  }
+
+  const pos = fc52wPosition(f.currentPrice, f.week52Low, f.week52High);
+  if (pos !== null) {
+    const tile = document.createElement('div');
+    tile.className = 'fc-stat fc-stat-pos';
+    const l = document.createElement('span');
+    l.className = 'fc-stat-label';
+    l.textContent = dict.forecast52wPos;
+    const row = document.createElement('div');
+    row.className = 'fc-stat-pos-row';
+    const v = document.createElement('span');
+    v.className = 'fc-stat-value num';
+    v.setAttribute('dir', 'ltr');
+    v.textContent = `${Math.round(pos * 100)}%`;
+    const band = document.createElement('div');
+    band.className = 'fc-mini-band';
+    band.setAttribute('dir', 'ltr');
+    const marker = document.createElement('span');
+    marker.className = 'fc-mini-marker';
+    marker.style.left = `${(pos * 100).toFixed(2)}%`;
+    marker.title = `${FC_MONEY(f.currentPrice)} / ${dict.forecastWeek52}`;
+    band.append(marker);
+    row.append(v, band);
+    tile.append(l, row);
+    block.append(tile);
+  }
+
+  return block.childNodes.length ? block : null;
+}
+
+export function renderForecast(result, lang) {
+  const dict = T[lang];
+  const containerId = 'forecastContent';
+  const f = result && result.ok === true ? result.forecast : null;
+  const NUMERIC_FIELDS = ['currentPrice', 'week52Low', 'week52High', 'targetLow', 'targetAvg', 'targetHigh',
+    'buy', 'hold', 'sell', 'buyPct', 'holdPct', 'sellPct', 'analysts', 'upsidePct'];
+  const hasAny = !!f && NUMERIC_FIELDS.some(k => hasValue(f[k]));
+  if (!f || !hasAny) { cardNotApplicable(containerId, dict.forecastNoData); return; }
+
+  const el = $(containerId);
+  el.innerHTML = '';
+  const wrap = document.createElement('div');
+  wrap.className = 'forecast';
+
+  const gauge = fcGaugePanel(f, dict);
+  if (gauge) wrap.append(gauge);
+  wrap.append(fcConsensusPanel(f, dict));
+  const stats = fcStatsPanel(f, dict);
+  if (stats) wrap.append(stats);
+
+  /* Footnote names the pages the numbers came from. The full URL lives in the
+     title attribute only — this is a provenance note, not a link farm. */
+  const foot = document.createElement('p');
+  foot.className = 'fc-foot';
+  const per = document.createElement('span');
+  per.textContent = dict.forecastPer;
+  foot.append(per);
+  for (const url of Array.isArray(result.sources) ? result.sources : []) {
+    const src = document.createElement('span');
+    src.className = 'fc-foot-src';
+    src.setAttribute('dir', 'ltr');
+    let label = String(url);
+    try {
+      const u = new URL(url);
+      label = `${u.hostname.replace(/^www\./, '')}${u.pathname}`;
+    } catch { /* keep the raw string; it is display-only text */ }
+    src.textContent = label;
+    src.title = url;
+    foot.append(src);
+  }
+  if (result.fetchedAt) {
+    const when = document.createElement('time');
+    when.setAttribute('datetime', result.fetchedAt);
+    when.className = 'fc-foot-time num';
+    when.textContent = String(result.fetchedAt).slice(0, 16).replace('T', ' ');
+    foot.append(when);
+  }
+  wrap.append(foot);
+  el.append(wrap);
 }
 
 /* ---------- live (streaming) report ---------- */
@@ -502,9 +1032,13 @@ function headingWords(text) {
     .toLowerCase();
 }
 
-function isSourcesHeading(node) {
+/* A bilingual heading is the common third shape ("منابع (Sources)", "Sources
+   (منابع)"), which normalizes to two words and previously fell through. */
+const SOURCES_HEAD_WORDS = /^(sources?|منابع)(\s+(sources?|منابع))?$/i;
+
+export function isSourcesHeading(node) {
   const w = headingWords(node.textContent);
-  return w === 'sources' || w === 'source' || w === 'منابع' || w === 'منابع:' || SOURCES_HEADING.test(String(node.textContent || '').trim());
+  return SOURCES_HEAD_WORDS.test(w) || SOURCES_HEADING.test(String(node.textContent || '').trim());
 }
 /* marked renders one-URL-per-line as <br>-separated text, and textContent drops
    the <br>, so a greedy [^\s<>"]+ run would swallow the NEXT URL into one giant
@@ -517,6 +1051,8 @@ const SOURCE_HOSTS = [
   { match: 'finance.yahoo.com', cls: 'yahoo', label: 'Yahoo Finance' },
   { match: 'barchart.com', cls: 'barchart', label: 'Barchart' },
   { match: 'perplexity.ai', cls: 'perplexity', label: 'Perplexity Finance' },
+  { match: 'tipranks.com', cls: 'tipranks', label: 'TipRanks' },
+  { match: 'cnn.com', cls: 'cnn', label: 'CNN Markets' },
 ];
 
 function classifyHost(hostname) {

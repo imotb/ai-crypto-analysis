@@ -1,4 +1,4 @@
-/* Live web search via Jina (s.jina.ai), restricted to three official finance
+/* Live web search via Jina (s.jina.ai), restricted to five official finance
    sources, always US region + English.
 
    This module imports nothing from the other data services on purpose: a search
@@ -10,7 +10,7 @@
 
 const ENDPOINT = 'https://s.jina.ai/';
 /* Longer than http.js' 10 s default: Jina answers a real query in ~1.2–1.6 s but
-   the whole card is lost if one of the three queries is cut off at 10 s. */
+   the whole card is lost if one of the queries is cut off at 10 s. */
 const TIMEOUT_MS = 15000;
 /* 5 per query, not 2: the allowlist filter discards many raw candidates and a
    query bills a flat ~10,000 tokens whatever num says, so asking for less only
@@ -18,13 +18,13 @@ const TIMEOUT_MS = 15000;
 const NUM_RESULTS = 5;
 const SNIPPET_LIMIT = 300;
 const PER_SOURCE_LIMIT = 3;
-const TOTAL_LIMIT = 9;
+const TOTAL_LIMIT = 12;
 
 /* Tokenized stocks trade on crypto rails, but users need the REAL equity pages
    (Yahoo/Barchart/Perplexity list the underlying, not the token). An explicit map
    beats a "strip trailing X" heuristic: TTWO has no X, and future xStocks could
    break that pattern silently. Keys are catalog tickers. */
-const TOKENIZED_STOCKS = {
+export const TOKENIZED_STOCKS = {
   GOOGLX: 'GOOGL', NVDAX: 'NVDA', AAPLX: 'AAPL', TSLAX: 'TSLA', CRCLX: 'CRCL',
   MSTRX: 'MSTR',  SPYX: 'SPY',  METAX: 'META', CSCOX: 'CSCO', AVGOX: 'AVGO',
   CRWDX: 'CRWD',  AMZNX: 'AMZN', TTWO: 'TTWO',
@@ -37,6 +37,8 @@ const QUERIES = [
   { source: 'yahoo', build: t => `site:finance.yahoo.com/quote ${t}-USD price` },
   { source: 'barchart', build: t => `site:www.barchart.com/crypto/quotes ${t}USD technical opinion` },
   { source: 'perplexity', build: t => `site:www.perplexity.ai/finance ${t}USD forecast news` },
+  /* Crypto forecast hub — the path is the SINGULAR /cryptocurrency/. */
+  { source: 'tipranks', build: s => `site:www.tipranks.com/cryptocurrency ${s} forecast` },
 ];
 
 /* Stock pages carry the plain ticker in every one of the three URL shapes —
@@ -46,9 +48,14 @@ const STOCK_QUERIES = [
   { source: 'yahoo', build: t => `site:finance.yahoo.com/quote ${t}` },
   { source: 'barchart', build: t => `site:www.barchart.com/stocks/quotes ${t} technical opinion` },
   { source: 'perplexity', build: t => `site:www.perplexity.ai/finance ${t} forecast news` },
+  /* The two forecast-native equity sources (V5): TipRanks forecast pages live under
+     /stocks/<t>/forecast and CNN under /markets/stocks/<T>, both with the plain
+     ticker straight after a slash — the existing boundary regex needs no change. */
+  { source: 'tipranks', build: t => `site:www.tipranks.com/stocks ${t} forecast price target` },
+  { source: 'cnn', build: t => `site:www.cnn.com/markets/stocks ${t} forecast` },
 ];
 
-const SOURCE_ORDER = ['yahoo', 'barchart', 'perplexity'];
+const SOURCE_ORDER = ['yahoo', 'barchart', 'perplexity', 'tipranks', 'cnn'];
 
 /* Canonical host per source. Jina also returns regional mirrors
    (uk.finance.yahoo.com, ca.finance.yahoo.com, ...), so the match is on the
@@ -57,6 +64,10 @@ const HOST_RULES = [
   { source: 'yahoo', suffix: 'finance.yahoo.com', canonical: 'finance.yahoo.com', paths: ['/quote/'] },
   { source: 'barchart', suffix: 'barchart.com', canonical: 'www.barchart.com', paths: ['/crypto/quotes/', '/stocks/quotes/'] },
   { source: 'perplexity', suffix: 'perplexity.ai', canonical: 'www.perplexity.ai', paths: ['/finance/'] },
+  /* V5: forecast pages only. /members/ and /news/ stay off the allowlist because
+     the path prefix is part of the rule, not a filter someone has to remember. */
+  { source: 'tipranks', suffix: 'tipranks.com', canonical: 'www.tipranks.com', paths: ['/stocks/', '/cryptocurrency/'] },
+  { source: 'cnn', suffix: 'cnn.com', canonical: 'www.cnn.com', paths: ['/markets/'] },
 ];
 
 class SearchError extends Error {
@@ -268,7 +279,7 @@ export async function runWebSearch({ apiKey, cryptoInfo, lang, signal } = {}) {
   const kept = [...byUrl.values()];
   if (!kept.length) return { ok: false, error: dominantFailure(failures) };
 
-  /* Source order, ~3 per source, hard cap 9 items. */
+  /* Source order, ~3 per source, hard cap 12 items. */
   const items = [];
   for (const source of SOURCE_ORDER) {
     for (const item of kept.filter(x => x.source === source).slice(0, PER_SOURCE_LIMIT)) {

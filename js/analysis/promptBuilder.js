@@ -189,6 +189,8 @@ const WEB_SOURCE_LABELS = {
     yahoo: 'Yahoo Finance',
     barchart: 'Barchart',
     perplexity: 'Perplexity Finance',
+    tipranks: 'TipRanks',
+    cnn: 'CNN Markets',
 };
 
 const WEB_BLOCK_LIMIT = 6000;
@@ -254,7 +256,78 @@ function buildWebBlock(webSearch, iso) {
     return `${header}${body}\n${rules}`.slice(0, WEB_BLOCK_LIMIT);
 }
 
-export function buildPrompt({ cryptoInfo, cryptoData, analysisType, language, webSearch }) {
+/* Independent of the 6,000-char web budget: the forecast is a handful of fixed
+   lines, and letting it ride along would let a long snippet list push the
+   analyst numbers out of the prompt. */
+const FORECAST_BLOCK_LIMIT = 1200;
+
+function forecastUnavailableLine(error) {
+    const reason = ['NO_SEARCH_KEY', 'INVALID_SEARCH_KEY', 'SEARCH_RATE_LIMIT', 'FORECAST_FAILED'].includes(error)
+        ? error
+        : 'NO_SEARCH_KEY';
+    return `=== ANALYST FORECAST: unavailable (${reason}) — base the analysis on panel data and the live web block only. ===`;
+}
+
+function money(n) {
+    return n === null || n === undefined ? null : `$${Number(n).toLocaleString('en-US', { maximumFractionDigits: 2 })}`;
+}
+
+/* Only the numbers the sources actually published are written out; a null field
+   drops its fragment instead of printing "null" or inventing a placeholder. */
+function buildForecastBlock(forecast, iso) {
+    if (!forecast || forecast.ok !== true || !forecast.forecast) {
+        return forecastUnavailableLine(forecast?.error);
+    }
+    const f = forecast.forecast;
+    const stamp = String(iso || new Date().toISOString());
+    const lines = [`=== ANALYST FORECAST — TIPRANKS / CNN MARKETS (fetched: ${stamp}) ===`];
+
+    if (f.rating || Number.isFinite(f.buy) || Number.isFinite(f.buyPct)) {
+        const parts = [];
+        if (f.rating) parts.push(f.rating.toUpperCase());
+        if (Number.isFinite(f.buy)) parts.push(`— ${f.buy} Buy / ${f.hold || 0} Hold / ${f.sell || 0} Sell (per TipRanks)`);
+        else if (Number.isFinite(f.buyPct)) parts.push(`— ${f.buyPct}% Buy / ${f.holdPct || 0}% Hold / ${f.sellPct || 0}% Sell (per CNN Markets)`);
+        lines.push(`Consensus: ${parts.join(' ')}`);
+    }
+
+    const targets = [
+        Number.isFinite(f.targetHigh) ? `Highest ${money(f.targetHigh)}` : null,
+        Number.isFinite(f.targetAvg) ? `Average ${money(f.targetAvg)}` : null,
+        Number.isFinite(f.targetLow) ? `Lowest ${money(f.targetLow)}` : null,
+    ].filter(Boolean);
+    if (targets.length) {
+        const implied = Number.isFinite(f.upsidePct)
+            ? ` (average implies ${f.upsidePct >= 0 ? '+' : ''}${f.upsidePct}%${Number.isFinite(f.currentPrice) ? ` vs current ${money(f.currentPrice)}` : ''})`
+            : '';
+        lines.push(`Price targets: ${targets.join(' | ')}${implied}`);
+    }
+
+    const level = [
+        Number.isFinite(f.currentPrice) ? money(f.currentPrice) : null,
+        Number.isFinite(f.week52Low) && Number.isFinite(f.week52High) ? `${money(f.week52Low)} – ${money(f.week52High)}` : null,
+    ].filter(Boolean);
+    if (level.length) lines.push(`Current price / 52-week range: ${level.join(' / ')}`);
+
+    if (Number.isFinite(f.analysts)) lines.push(`Coverage: ${f.analysts} analysts`);
+
+    const sources = Array.isArray(forecast.sources) && forecast.sources.length
+        ? forecast.sources.map(u => String(u).replace(/^https?:\/\//, ''))
+        : ['tipranks.com', 'cnn.com/markets'];
+    lines.push(`Sources: ${sources.join(' | ')}`);
+
+    lines.push(`USAGE RULES: 1) Attribute every forecast number ("per TipRanks"/"per CNN Markets"); do not present them as your own estimates. 2) Merge forecasts with the technical panel and web search; if they conflict, state the tension explicitly instead of picking a side silently. 3) Never invent or interpolate targets that are not in this block. 4) Translate the insight into the report language; URLs may appear only in the Sources list.`);
+
+    const block = lines.join('\n');
+    /* A budget cut must never split a rule mid-sentence, so drop whole lines
+       from the bottom (rules last) instead of slicing the string. */
+    if (block.length > FORECAST_BLOCK_LIMIT) {
+        const trimmed = lines.slice(0, -1);
+        return trimmed.join('\n').slice(0, FORECAST_BLOCK_LIMIT);
+    }
+    return block;
+}
+
+export function buildPrompt({ cryptoInfo, cryptoData, analysisType, language, webSearch, forecast }) {
     // دریافت اطلاعات زمانی فعلی
     const timeContext = getAnalysisTimeContext(language);
 
@@ -349,6 +422,7 @@ export function buildPrompt({ cryptoInfo, cryptoData, analysisType, language, we
     /* Inserted after the sentiment/news data section and before the CRITICAL
        NOTE in all four templates — a pure block insertion, no restructuring. */
     const webBlock = buildWebBlock(webSearch, timeContext.iso);
+    const forecastBlock = buildForecastBlock(forecast, timeContext.iso);
 
 
     if (language === 'fa') {
@@ -415,6 +489,8 @@ export function buildPrompt({ cryptoInfo, cryptoData, analysisType, language, we
     - شاخص ترس و طمع: ${cryptoData.fearGreedIndex ?? na} (${getFearGreedText(cryptoData.fearGreedIndex, language)})
 
     ${webBlock}
+
+    ${forecastBlock}
 
     **توجه بسیار مهم:** این تحلیل در تاریخ ${timeContext.currentDate} و ساعت ${timeContext.currentTime} انجام شده است. لطفاً تحلیل خود را کاملاً بر اساس شرایط فعلی بازار و داده‌های ارائه شده در این تاریخ انجام دهید. از اشاره به رویدادها یا شرایط تاریخی گذشته خودداری کنید.
 
@@ -509,6 +585,8 @@ export function buildPrompt({ cryptoInfo, cryptoData, analysisType, language, we
     - دامیننس بیت‌کوین: N/A (داده در دسترس نیست)
 
     ${webBlock}
+
+    ${forecastBlock}
 
     **توجه بسیار مهم:** این تحلیل در تاریخ ${timeContext.currentDate} و ساعت ${timeContext.currentTime} انجام شده است. لطفاً تحلیل بلندمدت خود را با توجه به شرایط فعلی بازار و چشم‌انداز آینده بر اساس وضعیت کنونی ارائه دهید.
 
@@ -618,6 +696,8 @@ export function buildPrompt({ cryptoInfo, cryptoData, analysisType, language, we
 
     ${webBlock}
 
+    ${forecastBlock}
+
     **CRITICAL NOTE:**
     This analysis was performed on ${timeContext.currentDate} at ${timeContext.currentTime}. Please provide your analysis entirely based on current market conditions and data as of this date. Do not refer to past historical events or conditions.
 
@@ -712,6 +792,8 @@ export function buildPrompt({ cryptoInfo, cryptoData, analysisType, language, we
     - Bitcoin Dominance: N/A (Data not available)
 
     ${webBlock}
+
+    ${forecastBlock}
 
     **CRITICAL NOTE:**
     This analysis was performed on ${timeContext.currentDate} at ${timeContext.currentTime}. Please provide your long-term analysis considering current market conditions and future outlook based on the present situation.
