@@ -555,6 +555,42 @@ export function fc52wPosition(current, low, high) {
   return Math.min(1, Math.max(0, (c - l) / (h - l)));
 }
 
+/* §4.1 — the rating word has to fit the donut hole, so it is broken into at most
+   two balanced lines instead of one long run. DOM-free on purpose: the wrapping
+   rule is what the browser test asserts. */
+export function fcRatingLines(rating) {
+  const words = String(rating == null ? '' : rating).trim().toUpperCase().split(/\s+/).filter(Boolean);
+  if (words.length <= 1) return words;
+  let split = 1;
+  let best = Infinity;
+  for (let i = 1; i < words.length; i++) {
+    const left = words.slice(0, i).join(' ').length;
+    const right = words.slice(i).join(' ').length;
+    if (Math.abs(left - right) < best) {
+      best = Math.abs(left - right);
+      split = i;
+    }
+  }
+  return [words.slice(0, split).join(' '), words.slice(split).join(' ')];
+}
+
+/* §4.2 — the upside pill is a satellite of the average chip, not a free-floating
+   label: it is placed in the chip's own band, on the side away from the current
+   price, and only clamped when neither side fits. */
+export function fcPillBand(o) {
+  const gap = o.gap === undefined ? 2 : o.gap;
+  const half = o.pillW / 2;
+  const lo = o.min + half;
+  const hi = o.max - half;
+  const right = { x: o.chipX + o.chipW / 2 + gap + half, side: 'right' };
+  const left = { x: o.chipX - o.chipW / 2 - gap - half, side: 'left' };
+  const order = o.prefer === 'right' ? [right, left] : [left, right];
+  const fits = v => v >= lo && v <= hi;
+  for (const c of order) if (fits(c.x)) return c;
+  /* Neither side fits: clamp the preferred one so the pill still touches the chip. */
+  return { x: Math.min(Math.max(order[0].x, lo), hi), side: order[0].side };
+}
+
 
 /* Gauge geometry, in viewBox units. The SVG scales to the panel, so these are
    proportions rather than pixels; x0/x1 leave room for the end axis labels. */
@@ -605,7 +641,10 @@ function fcPanelHead(dict, key) {
 function fcGaugePanel(f, dict) {
   const layout = fcGaugeLayout(f);
   if (!layout) return null;
-  const panel = fcPanelHead(dict, 'forecastPanelTargets');
+  const hasTargets = ['targetLow', 'targetAvg', 'targetHigh'].some(k => hasValue(f[k]));
+  /* A chart with no targets is a price-range chart, so it must not be titled
+     "Price Targets" — the user reads a target-less line as a broken card. */
+  const panel = fcPanelHead(dict, hasTargets ? 'forecastPanelTargets' : 'forecastPanelRange');
   panel.classList.add('fc-gauge');
 
   const G = FC_G;
@@ -615,9 +654,9 @@ function fcGaugePanel(f, dict) {
   const upside = fcUpsidePct(f);
   /* With no targets the upper rows of the gauge are never drawn, so the viewBox
      is cropped to the rows that actually carry marks. */
-  const top = layout.zone || avg || upside !== null ? 0 : 40;
+  const crop = layout.zone || avg || upside !== null ? 0 : 40;
   const svg = svgNode('svg', {
-    viewBox: `0 ${top} ${FC_G.w} ${FC_G.h - top}`,
+    viewBox: `0 ${crop} ${FC_G.w} ${FC_G.h - crop}`,
     class: 'fc-gauge-svg',
     role: 'img',
     'aria-label': fcGaugeAria(f, dict),
@@ -660,25 +699,28 @@ function fcGaugePanel(f, dict) {
     if (!d.p) continue;
     const isAvg = d.cls === 'fc-pin-avg';
     const x = fcGx(d.p.pct);
-    const top = G.axisY - (isAvg ? G.pinTall : G.pinShort);
+    const pinTop = G.axisY - (isAvg ? G.pinTall : G.pinShort);
     const g = svgNode('g', { class: `fc-pin ${d.cls}` });
-    g.append(svgNode('line', { class: 'fc-pin-line', x1: x, y1: G.axisY, x2: x, y2: top }));
-    g.append(svgNode('circle', { class: 'fc-pin-dot', cx: x, cy: top, r: isAvg ? 4 : 3 }));
-    if (!isAvg) g.append(svgText(FC_MONEY(d.p.value), { class: 'fc-pin-value', x, y: top - 5, 'text-anchor': 'middle' }));
+    g.append(svgNode('line', { class: 'fc-pin-line', x1: x, y1: G.axisY, x2: x, y2: pinTop }));
+    g.append(svgNode('circle', { class: 'fc-pin-dot', cx: x, cy: pinTop, r: isAvg ? 4 : 3 }));
+    if (!isAvg) g.append(svgText(FC_MONEY(d.p.value), { class: 'fc-pin-value', x, y: pinTop - 5, 'text-anchor': 'middle' }));
     const titleText = isAvg && upside !== null
       ? `${d.label} ${FC_MONEY(d.p.value)} (${dict.forecastUpside} ${fcSigned(upside)})`
       : `${d.label} ${FC_MONEY(d.p.value)}`;
     svg.append(svgTitle(g, titleText));
   }
 
+  const BAND = { y: 24, h: 17 };
+  let chip = null;
   if (avg) {
     const text = FC_MONEY(avg.value);
     const cw = 10 + text.length * 5.1;
     const cx = fcClampX(fcGx(avg.pct), cw / 2);
-    const chip = svgNode('g', { class: 'fc-avg-chip' });
-    chip.append(svgNode('rect', { x: cx - cw / 2, y: 24, width: cw, height: 17, rx: 8 }));
-    chip.append(svgText(text, { class: 'fc-avg-chip-text', x: cx, y: 36, 'text-anchor': 'middle' }));
-    svg.append(svgTitle(chip, `${dict.forecastAverageTarget} ${text}${upside !== null ? ` (${dict.forecastUpside} ${fcSigned(upside)})` : ''}`));
+    chip = { x: cx, w: cw };
+    const g = svgNode('g', { class: 'fc-avg-chip' });
+    g.append(svgNode('rect', { x: cx - cw / 2, y: BAND.y, width: cw, height: BAND.h, rx: 8 }));
+    g.append(svgText(text, { class: 'fc-avg-chip-text', x: cx, y: BAND.y + 12, 'text-anchor': 'middle' }));
+    svg.append(svgTitle(g, `${dict.forecastAverageTarget} ${text}${upside !== null ? ` (${dict.forecastUpside} ${fcSigned(upside)})` : ''}`));
   }
 
   if (now) {
@@ -698,19 +740,38 @@ function fcGaugePanel(f, dict) {
   }
 
   if (now && avg && upside !== null && Math.abs(now.pct - avg.pct) > 0.03) {
+    /* One dashed cubic instead of the three-segment bracket: it still ties the
+       current price to the average, but it stops crossing the label rows. */
     const xa = fcGx(now.pct);
     const xb = fcGx(avg.pct);
-    const mid = (xa + xb) / 2;
-    svg.append(svgNode('path', { class: 'fc-link', d: `M ${xa} ${G.axisY - 9} L ${xa} 13 L ${xb} 13 L ${xb} 24` }));
+    const rise = (G.axisY - 8 - BAND.y) * 0.45;
+    svg.append(svgNode('path', {
+      class: 'fc-link',
+      d: `M ${xa} ${G.axisY - 8} C ${xa} ${G.axisY - 8 - rise}, ${xb} ${BAND.y + rise}, ${xb} ${BAND.y}`,
+    }));
     const text = fcSigned(upside);
     const pw = 12 + text.length * 5.1;
+    const placed = fcPillBand({
+      chipX: chip.x,
+      chipW: chip.w,
+      pillW: pw,
+      prefer: xa < xb ? 'right' : 'left',
+      min: G.x0,
+      max: G.x1,
+    });
     const pill = svgNode('g', { class: `fc-pill ${upside >= 0 ? 'is-up' : 'is-down'}` });
-    pill.append(svgNode('rect', { x: mid - pw / 2, y: 5, width: pw, height: 16, rx: 8 }));
-    pill.append(svgText(text, { class: 'fc-pill-text', x: mid, y: 16.5, 'text-anchor': 'middle' }));
+    pill.append(svgNode('rect', { x: placed.x - pw / 2, y: BAND.y, width: pw, height: BAND.h, rx: 8 }));
+    pill.append(svgText(text, { class: 'fc-pill-text', x: placed.x, y: BAND.y + 12, 'text-anchor': 'middle' }));
     svg.append(svgTitle(pill, `${dict.forecastUpside} ${text}`));
   }
 
   panel.append(svg);
+  if (!hasTargets) {
+    const muted = document.createElement('p');
+    muted.className = 'fc-muted';
+    muted.textContent = dict.forecastNoTargets;
+    panel.append(muted);
+  }
   return panel;
 }
 
@@ -721,130 +782,133 @@ function fcSegLabel(dict, key) {
 }
 
 /* §5 — donut + merged legend, or the CNN percentage case, or one muted line. */
-function fcConsensusPanel(f, dict) {
-  const segs = fcDonutSegments(f.buy, f.hold, f.sell);
-  const pcts = [f.buyPct, f.holdPct, f.sellPct];
-  const panel = fcPanelHead(dict, 'forecastPanelConsensus');
-  panel.classList.add('fc-consensus');
+/* §3 — one donut body shared by both consensus branches, so the two data shapes
+   can never grow into two different charts again. `withCounts` only changes the
+   legend column and the tooltip wording, never the geometry. */
+function fcDonutBody(o) {
+  const { segs, dict, rating, analysts, withCounts, cnnFallback } = o;
+  const body = document.createElement('div');
+  body.className = 'fc-donut-body';
 
-  if (segs && segs.length) {
-    const body = document.createElement('div');
-    body.className = 'fc-donut-body';
-
-    const wrap = document.createElement('div');
-    wrap.className = 'fc-donut-wrap';
-    const ariaParts = segs.map(s => `${fcSegLabel(dict, s.key)} ${s.value} (${Math.round(s.ratio * 100)}%)`);
-    const svg = svgNode('svg', {
-      viewBox: '0 0 120 120',
-      class: 'fc-donut',
-      role: 'img',
-      'aria-label': `${dict.forecastAriaDonut} ${[f.rating ? String(f.rating).toUpperCase() : '', ...ariaParts].filter(Boolean).join(' · ')}`,
-      focusable: 'false',
+  const wrap = document.createElement('div');
+  wrap.className = 'fc-donut-wrap';
+  const ariaParts = segs.map(s => withCounts
+    ? `${fcSegLabel(dict, s.key)} ${s.value} (${Math.round(s.ratio * 100)}%)`
+    : `${fcSegLabel(dict, s.key)} ${Math.round(s.value)}%`);
+  const svg = svgNode('svg', {
+    viewBox: '0 0 120 120',
+    class: 'fc-donut',
+    role: 'img',
+    'aria-label': `${dict.forecastAriaDonut} ${[rating ? String(rating).toUpperCase() : '', ...ariaParts].filter(Boolean).join(' · ')}`,
+    focusable: 'false',
+  });
+  svg.append(svgNode('circle', { class: 'fc-donut-track', cx: 60, cy: 60, r: 48, fill: 'none' }));
+  for (const s of segs) {
+    const seg = svgNode('circle', {
+      class: `fc-donut-seg fc-seg-${s.key}`,
+      cx: 60, cy: 60, r: 48, fill: 'none',
+      'stroke-dasharray': `${s.dash.toFixed(4)} ${(FC_DONUT_C - s.dash).toFixed(4)}`,
+      'stroke-dashoffset': s.offset.toFixed(4),
+      transform: 'rotate(-90 60 60)',
     });
-    svg.append(svgNode('circle', { class: 'fc-donut-track', cx: 60, cy: 60, r: 48, fill: 'none' }));
-    for (const s of segs) {
-      const seg = svgNode('circle', {
-        class: `fc-donut-seg fc-seg-${s.key}`,
-        cx: 60, cy: 60, r: 48, fill: 'none',
-        'stroke-dasharray': `${s.dash.toFixed(4)} ${(FC_DONUT_C - s.dash).toFixed(4)}`,
-        'stroke-dashoffset': s.offset.toFixed(4),
-        transform: 'rotate(-90 60 60)',
-      });
-      /* The reveal states live in CSS, so the numbers travel as custom
-         properties and the attributes stay a no-CSS fallback. */
-      seg.style.setProperty('--seg-dash', `${s.dash.toFixed(4)} ${(FC_DONUT_C - s.dash).toFixed(4)}`);
-      seg.style.setProperty('--dash-len', s.dash.toFixed(4));
-      seg.style.setProperty('--off', s.offset.toFixed(4));
-      svg.append(svgTitle(seg, `${fcSegLabel(dict, s.key)} ${s.value} — ${Math.round(s.ratio * 100)}%`));
-    }
-    wrap.append(svg);
+    /* The reveal states live in CSS, so the numbers travel as custom
+       properties and the attributes stay a no-CSS fallback. */
+    seg.style.setProperty('--seg-dash', `${s.dash.toFixed(4)} ${(FC_DONUT_C - s.dash).toFixed(4)}`);
+    seg.style.setProperty('--dash-len', s.dash.toFixed(4));
+    seg.style.setProperty('--off', s.offset.toFixed(4));
+    svg.append(svgTitle(seg, withCounts
+      ? `${fcSegLabel(dict, s.key)} ${s.value} — ${Math.round(s.ratio * 100)}%`
+      : `${fcSegLabel(dict, s.key)} ${Math.round(s.value)}%`));
+  }
+  wrap.append(svg);
 
-    const center = document.createElement('div');
-    center.className = 'fc-donut-center';
-    if (f.rating) {
-      const word = document.createElement('span');
-      word.className = 'fc-donut-rating';
-      word.textContent = String(f.rating).toUpperCase();
-      center.append(word);
+  const center = document.createElement('div');
+  center.className = 'fc-donut-center';
+  const lines = fcRatingLines(rating);
+  if (lines.length) {
+    const word = document.createElement('span');
+    word.className = 'fc-donut-rating';
+    /* Long single tokens ("OVERWEIGHT") get the smaller step as well. */
+    if (lines.some(l => l.length >= 8)) word.classList.add('is-long');
+    for (const line of lines) {
+      const row = document.createElement('span');
+      row.className = 'fc-donut-rating-line';
+      row.textContent = line;
+      word.append(row);
     }
-    if (hasValue(f.analysts)) {
-      const count = document.createElement('span');
-      count.className = 'fc-donut-count num';
-      count.setAttribute('dir', 'ltr');
-      count.textContent = `${f.analysts} ${dict.forecastAnalysts}`;
-      center.append(count);
-    }
-    wrap.append(center);
-    body.append(wrap);
+    center.append(word);
+  }
+  if (hasValue(analysts)) {
+    const count = document.createElement('span');
+    count.className = 'fc-donut-count num';
+    count.setAttribute('dir', 'ltr');
+    count.textContent = `${analysts} ${dict.forecastAnalysts}`;
+    center.append(count);
+  }
+  if (!center.childNodes.length && cnnFallback) {
+    const who = document.createElement('span');
+    who.className = 'fc-donut-count';
+    who.setAttribute('dir', 'ltr');
+    who.textContent = 'CNN';
+    center.append(who);
+  }
+  wrap.append(center);
+  body.append(wrap);
 
-    const legend = document.createElement('ul');
-    legend.className = 'fc-legend';
-    for (const s of segs) {
-      const row = document.createElement('li');
-      row.className = 'fc-legend-row';
-      const dot = document.createElement('span');
-      dot.className = `fc-dot fc-dot-${s.key}`;
-      const label = document.createElement('span');
-      label.className = 'fc-legend-label';
-      label.textContent = fcSegLabel(dict, s.key);
+  /* Zero-value sides get no row in either branch — the donut already skips them. */
+  const legend = document.createElement('ul');
+  legend.className = 'fc-legend';
+  for (const s of segs) {
+    const row = document.createElement('li');
+    row.className = 'fc-legend-row';
+    const dot = document.createElement('span');
+    dot.className = `fc-dot fc-dot-${s.key}`;
+    const label = document.createElement('span');
+    label.className = 'fc-legend-label';
+    label.textContent = fcSegLabel(dict, s.key);
+    row.append(dot, label);
+    if (withCounts) {
       const count = document.createElement('span');
       count.className = 'fc-legend-count num';
       count.setAttribute('dir', 'ltr');
       count.textContent = String(s.value);
-      const pct = document.createElement('span');
-      pct.className = 'fc-legend-pct num';
-      pct.setAttribute('dir', 'ltr');
-      pct.textContent = `${Math.round(s.ratio * 100)}%`;
-      row.append(dot, label, count, pct);
-      legend.append(row);
+      row.append(count);
     }
-    body.append(legend);
-    panel.append(body);
+    const pct = document.createElement('span');
+    pct.className = 'fc-legend-pct num';
+    pct.setAttribute('dir', 'ltr');
+    pct.textContent = `${Math.round(withCounts ? s.ratio * 100 : s.value)}%`;
+    row.append(pct);
+    legend.append(row);
+  }
+  body.append(legend);
+  return body;
+}
+
+function fcConsensusPanel(f, dict) {
+  const panel = fcPanelHead(dict, 'forecastPanelConsensus');
+  panel.classList.add('fc-consensus');
+
+  const counts = fcDonutSegments(f.buy, f.hold, f.sell);
+  if (counts && counts.length) {
+    /* TipRanks counts win the merge, so no provenance caption is needed here. */
+    panel.append(fcDonutBody({
+      segs: counts, dict, rating: f.rating, analysts: f.analysts, withCounts: true,
+    }));
     return panel;
   }
 
-  if (pcts.some(hasValue)) {
-    /* §5.5 — CNN publishes percentages, not counts: a labelled split bar. */
-    const total = pcts.filter(hasValue).reduce((a, v) => a + Number(v), 0);
-    const bar = document.createElement('div');
-    bar.className = 'fc-cnn';
+  const pcts = fcDonutSegments(f.buyPct, f.holdPct, f.sellPct);
+  if (pcts && pcts.length) {
+    /* CNN publishes percentages instead of counts: the same donut, fed with the
+       percentages, plus one quiet line that says where they came from. */
     const caption = document.createElement('p');
-    caption.className = 'fc-cnn-caption';
+    caption.className = 'fc-eyebrow';
     caption.textContent = dict.forecastCnnSplit;
-    bar.append(caption);
-    const track = document.createElement('div');
-    track.className = 'fc-cnn-bar';
-    track.setAttribute('dir', 'ltr');
-    const keys = ['buy', 'hold', 'sell'];
-    pcts.forEach((v, i) => {
-      if (!hasValue(v) || Number(v) <= 0 || !(total > 0)) return;
-      const seg = document.createElement('span');
-      seg.className = `fc-cnn-seg fc-seg-${keys[i]}`;
-      seg.style.width = `${(Number(v) / total) * 100}%`;
-      seg.title = `${fcSegLabel(dict, keys[i])} ${Number(v)}%`;
-      track.append(seg);
-    });
-    bar.append(track);
-    const legend = document.createElement('ul');
-    legend.className = 'fc-cnn-legend';
-    pcts.forEach((v, i) => {
-      if (!hasValue(v)) return;
-      const row = document.createElement('li');
-      row.className = 'fc-legend-row';
-      const dot = document.createElement('span');
-      dot.className = `fc-dot fc-dot-${keys[i]}`;
-      const label = document.createElement('span');
-      label.className = 'fc-legend-label';
-      label.textContent = fcSegLabel(dict, keys[i]);
-      const pct = document.createElement('span');
-      pct.className = 'fc-legend-pct num';
-      pct.setAttribute('dir', 'ltr');
-      pct.textContent = `${Number(v)}%`;
-      row.append(dot, label, pct);
-      legend.append(row);
-    });
-    bar.append(legend);
-    panel.append(bar);
+    panel.append(caption);
+    panel.append(fcDonutBody({
+      segs: pcts, dict, rating: f.rating, analysts: f.analysts, withCounts: false, cnnFallback: true,
+    }));
     return panel;
   }
 
@@ -904,11 +968,16 @@ function fcStatsPanel(f, dict) {
     const band = document.createElement('div');
     band.className = 'fc-mini-band';
     band.setAttribute('dir', 'ltr');
+    /* The travelled part of the 52-week range is painted, not implied: an empty
+       strip with one dot reads as a control, not as a position. */
+    const fill = document.createElement('span');
+    fill.className = 'fc-mini-fill';
+    fill.style.width = `${(pos * 100).toFixed(2)}%`;
     const marker = document.createElement('span');
     marker.className = 'fc-mini-marker';
     marker.style.left = `${(pos * 100).toFixed(2)}%`;
     marker.title = `${FC_MONEY(f.currentPrice)} / ${dict.forecastWeek52}`;
-    band.append(marker);
+    band.append(fill, marker);
     row.append(v, band);
     tile.append(l, row);
     block.append(tile);

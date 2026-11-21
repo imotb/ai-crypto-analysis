@@ -604,7 +604,7 @@ html[data-theme='dark'] .combo-pop {
 
 .fc-avg-chip rect { fill: rgba(245, 158, 11, .16); stroke: rgba(245, 158, 11, .45); }
 .fc-avg-chip-text { font-family: var(--font-mono); font-size: 9.5px; font-weight: 700; fill: var(--warning); }
-.fc-link { fill: none; stroke: var(--text-3); stroke-width: 1; stroke-dasharray: 4 3; }
+.fc-link { fill: none; stroke: var(--text-3); stroke-width: .8; opacity: .55; stroke-dasharray: 3 4; }
 .fc-pill rect { fill: var(--glass-3); stroke: var(--border-strong); }
 .fc-pill-text { font-family: var(--font-mono); font-size: 9px; font-weight: 700; fill: var(--text-2); }
 .fc-pill.is-up rect { fill: rgba(16, 185, 129, .14); stroke: rgba(16, 185, 129, .4); }
@@ -629,10 +629,15 @@ html[data-theme='dark'] .combo-pop {
 .fc-seg-buy { stroke: var(--success); }
 .fc-seg-hold { stroke: var(--warning); }
 .fc-seg-sell { stroke: var(--danger); }
-.fc-donut-center { position: absolute; inset: 0; display: grid; place-content: center; gap: 2px; text-align: center; pointer-events: none; }
-.fc-donut-rating { font-size: .74rem; font-weight: 800; letter-spacing: .05em; color: var(--success); }
-.fc-donut-count { font-size: .68rem; color: var(--text-2); }
-.fc-legend { list-style: none; margin: 0; padding: 0; display: grid; gap: 6px; flex: 1 1 190px; max-width: 300px; min-width: 0; }
+/* The centre box is the ring's hole (inner radius 41 of 60), so a long rating
+   word cannot reach the stroke: the lines wrap inside it instead. */
+.fc-donut-center { position: absolute; inset: 16%; display: grid; place-content: center; gap: 1px; text-align: center; pointer-events: none; }
+.fc-donut-rating { max-width: 100%; font-size: .68rem; font-weight: 800; line-height: 1.12; letter-spacing: .02em; color: var(--success); overflow-wrap: anywhere; }
+.fc-donut-rating.is-long { font-size: .58rem; }
+.fc-donut-rating-line { display: block; }
+.fc-donut-count { max-width: 100%; font-size: .66rem; color: var(--text-2); overflow-wrap: anywhere; }
+/* The legend hugs the ring instead of stretching to the far edge of the panel. */
+.fc-legend { list-style: none; margin: 0; padding: 0; display: grid; gap: 6px; flex: 0 1 auto; width: max-content; max-width: 210px; min-width: 0; }
 .fc-legend-row { display: grid; grid-template-columns: 10px minmax(0, 1fr) auto auto; align-items: center; gap: 8px; font-size: .78rem; }
 .fc-dot { width: 10px; height: 10px; border-radius: 3px; background: var(--text-3); }
 .fc-dot-buy { background: var(--success); }
@@ -642,15 +647,7 @@ html[data-theme='dark'] .combo-pop {
 .fc-legend-count { font-weight: 700; color: var(--text); }
 .fc-legend-pct { font-size: .72rem; color: var(--text-3); }
 
-.fc-cnn { display: grid; gap: var(--space-2); min-width: 0; }
-.fc-cnn-caption { margin: 0; font-size: .72rem; color: var(--text-3); }
-.fc-cnn-bar { display: flex; height: 12px; border-radius: var(--radius-pill); overflow: hidden; background: var(--glass-3); border: 1px solid var(--border); }
-.fc-cnn-seg { height: 100%; min-width: 2px; }
-.fc-cnn-seg.fc-seg-buy { background: var(--success); }
-.fc-cnn-seg.fc-seg-hold { background: var(--warning); }
-.fc-cnn-seg.fc-seg-sell { background: var(--danger); }
-.fc-cnn-legend { list-style: none; margin: 0; padding: 0; display: flex; flex-wrap: wrap; gap: 6px 16px; font-size: .78rem; }
-.fc-cnn-legend .fc-legend-row { display: inline-grid; }
+.fc-eyebrow { margin: 0; font-size: .68rem; color: var(--text-3); letter-spacing: .02em; }
 .fc-muted { margin: 0; font-size: .78rem; color: var(--text-3); }
 
 .fc-stats { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 10px; }
@@ -661,15 +658,17 @@ html[data-theme='dark'] .combo-pop {
 .fc-stat.is-down .fc-stat-value { color: var(--danger); }
 .fc-stat-pos-row { display: flex; align-items: center; gap: 8px; min-width: 0; }
 .fc-stat-pos { grid-column: 1 / -1; }
-.fc-mini-band { position: relative; flex: 1 1 auto; height: 6px; min-width: 26px; border-radius: var(--radius-pill); background: var(--glass-3); border: 1px solid var(--border); }
-.fc-mini-marker { position: absolute; top: 50%; width: 8px; height: 8px; border-radius: 50%; transform: translate(-50%, -50%); background: var(--primary-2); border: 1px solid var(--bg-2); }
+.fc-mini-band { position: relative; flex: 1 1 auto; height: 8px; min-width: 26px; border-radius: var(--radius-pill); background: var(--glass-3); border: 1px solid var(--border); overflow: visible; }
+.fc-mini-fill { position: absolute; top: 0; bottom: 0; left: 0; border-radius: var(--radius-pill) 0 0 var(--radius-pill); background: linear-gradient(90deg, rgba(16,185,129,.22), rgba(16,185,129,.62)); }
+.fc-mini-marker { position: absolute; top: 50%; width: 2px; height: 14px; border-radius: 2px; transform: translate(-50%, -50%); background: var(--success); }
 
 @media (max-width: 480px) {
   .fc-stats { grid-template-columns: repeat(2, minmax(0, 1fr)); }
   .fc-stat-pos { grid-column: span 2; }
   .fc-donut-body { gap: var(--space-3); }
   .fc-donut-wrap { width: 104px; height: 104px; }
-  .fc-donut-rating { font-size: .66rem; }
+  .fc-donut-rating { font-size: .6rem; }
+  .fc-donut-rating.is-long { font-size: .52rem; }
 }
 
 /* Card reveal (§5.7): the donut arcs sweep out from each segment's own start and
@@ -692,7 +691,7 @@ html[data-theme='dark'] .combo-pop {
 }
 
 @media (prefers-reduced-motion: reduce) {
-  .fc-donut-seg, .fc-pin, .fc-now, .fc-avg-chip, .fc-pill, .fc-cnn-seg { transition: none; }
+  .fc-donut-seg, .fc-pin, .fc-now, .fc-avg-chip, .fc-pill { transition: none; }
   .reveal:not(.in) .fc-pin,
   .reveal:not(.in) .fc-now,
   .reveal:not(.in) .fc-avg-chip,
@@ -860,21 +859,21 @@ body.pdf-mode .topbar-actions, body.pdf-mode .report-toolbar { display: none; }
   .src-chip { box-shadow: none; max-width: 100%; }
   .src-chip .src-path { max-width: none; overflow: visible; text-overflow: clip; white-space: normal; }
   .stream-cursor { display: none; }
-  .fc-donut-seg, .fc-pin, .fc-now, .fc-avg-chip, .fc-pill, .fc-cnn-seg { transition: none; }
+  .fc-donut-seg, .fc-pin, .fc-now, .fc-avg-chip, .fc-pill { transition: none; }
   .reveal:not(.in) .fc-pin, .reveal:not(.in) .fc-now,
   .reveal:not(.in) .fc-avg-chip, .reveal:not(.in) .fc-pill { opacity: 1; transform: none; }
   .reveal:not(.in) .fc-donut-seg { stroke-dasharray: var(--seg-dash); stroke-dashoffset: calc(var(--off) * 1px); }
   .fc-band, .fc-zone, .fc-donut-track, .fc-donut-seg, .fc-pill rect, .fc-avg-chip rect,
-  .fc-mini-band, .fc-cnn-bar, .fc-stat, .fc-cnn-seg { print-color-adjust: exact; -webkit-print-color-adjust: exact; }
+  .fc-mini-band, .fc-mini-fill, .fc-stat { print-color-adjust: exact; -webkit-print-color-adjust: exact; }
 }
 body.pdf-mode .src-chip { box-shadow: none; max-width: 100%; }
 body.pdf-mode .src-chip .src-path { max-width: none; overflow: visible; text-overflow: clip; white-space: normal; }
 body.pdf-mode .stream-cursor { display: none; }
 body.pdf-mode .fc-donut-seg, body.pdf-mode .fc-pin, body.pdf-mode .fc-now,
-body.pdf-mode .fc-avg-chip, body.pdf-mode .fc-pill, body.pdf-mode .fc-cnn-seg { transition: none; }
+body.pdf-mode .fc-avg-chip, body.pdf-mode .fc-pill { transition: none; }
 body.pdf-mode .reveal:not(.in) .fc-pin, body.pdf-mode .reveal:not(.in) .fc-now,
 body.pdf-mode .reveal:not(.in) .fc-avg-chip, body.pdf-mode .reveal:not(.in) .fc-pill { opacity: 1; transform: none; }
 body.pdf-mode .reveal:not(.in) .fc-donut-seg { stroke-dasharray: var(--seg-dash); stroke-dashoffset: calc(var(--off) * 1px); }
 body.pdf-mode .fc-band, body.pdf-mode .fc-zone, body.pdf-mode .fc-donut-track, body.pdf-mode .fc-donut-seg,
 body.pdf-mode .fc-pill rect, body.pdf-mode .fc-avg-chip rect, body.pdf-mode .fc-mini-band,
-body.pdf-mode .fc-cnn-bar, body.pdf-mode .fc-stat, body.pdf-mode .fc-cnn-seg { print-color-adjust: exact; -webkit-print-color-adjust: exact; }
+body.pdf-mode .fc-mini-fill, body.pdf-mode .fc-stat { print-color-adjust: exact; -webkit-print-color-adjust: exact; }
