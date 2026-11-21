@@ -1,4 +1,4 @@
-## پنل هوشمند تحلیل ارزهای دیجیتال با هوش مصنوعی 🤖 (نسخه ۴)
+## پنل هوشمند تحلیل ارزهای دیجیتال با هوش مصنوعی 🤖 (نسخه ۵)
 پنل تحلیل ارزهای دیجیتال با هوش مصنوعی، یک رابط کاربری تحت وب و کاملاً رایگان است که با استفاده از جدیدترین مدل‌های زبانی بزرگ (LLM) در پشت‌زمینه، تحلیل‌های لحظه‌ای و دقیقی از وضعیت فعلی، پتانسیل‌ها و ریسک‌های بازار رمز ارزها را در اختیار شما قرار می‌دهد.
 کافی‌ست ارز دیجیتال مورد نظر خود را انتخاب کنید تا در کمترین زمان، گزارش کاملی از وضعیت فنی، احساسات بازار، پیش‌بینی کوتاه‌مدت و بلندمدت، سیگنال‌های حمایت و مقاومت و پیشنهاد‌های معاملاتی را از مدل هوش مصنوعی مورد نظر خود دریافت کنید.
 این پنل کاملاً رایگان و از طریق GitHub Pages در دسترس است و نیازی به دیپلوی دستی توسط کاربر ندارد.
@@ -13,13 +13,22 @@
 - **👽 پشتیبانی از LLMهای متنوع:** امکان انتخاب بین مدل‌های مختلف هوش مصنوعی مانند DeepSeek، GPT-OSS، Grok و…
 
 ---
+## 🆕 امکانات نسخه ۵ (منابع تحلیلگر + کارت «پیشبینی تحلیلگر»):
+- **➕ دو منبع رسمی تازه به استخر جستجو:** علاوه بر Yahoo، Barchart و Perplexity حالا **TipRanks** (`tipranks.com/stocks/...` و `tipranks.com/cryptocurrency/...`) و **CNN Markets** (`cnn.com/markets/...`) هم مجازند. برای نمادهای سهام (شامل xStock) پنج پرس‌وجو و برای ارزهای دیجیتال چهار پرس‌وجو ارسال می‌شود؛ سقف نتایج از ۹ به ۱۲ رسید و نشان و چیپ منبع برای دو میزبان تازه هم رنگ خودش را دارد. نشانی‌های خارج از این مسیرها (`tipranks.com/members/...`، `cnn.com/politics/...`) در همان فهرست سفید رد می‌شوند.
+- **📈 کارت جدید «پیشبینی تحلیلگر»:** دقیقاً میان کارت «متریک‌های پیشرفته شبکه» و «تحلیل کامل هوش مصنوعی» قرار می‌گیرد و از Jina Reader (`r.jina.ai`) سه عدد را بیرون می‌کشد: **بالاترین / میانگین / کمترین قیمت هدف** به‌همراه اجماع **Buy / Hold / Sell**. دو نوار مینیمال با CSS ساده (بدون کتابخانهٔ نمودار): یک بازوی قیمت‌هدف با نشانگر پایین‌ترین، میانگین، بالاترین و قیمت فعلی، و یک نوار انباشته اجماع. هیچ عددی که منبع publish نکرده باشد نمایش داده نمی‌شود؛ اگر هیچ داده‌ای نبود، فقط یک خط محو «پیشبینی تحلیلگر در دسترس نیست» دیده می‌شود.
+- **🧠 ورود همین اعداد به پرامپت:** یک بلوک مستقل `ANALYST FORECAST — TIPRANKS / CNN MARKETS` (سقف ۱٬۲۰۰ کاراکتر، جدا از بودجهٔ بلوک وب) درست بعد از نتایج جستجو پیش از «توجه بسیار مهم» اضافه می‌شود و چهار قانون اجباری حمل می‌کند: هر عدد پیشبینی باید به TipRanks یا CNN Markets استناد شود، در صورت تضاد با پنل و جستجو همان تضاد صریحاً گفته شود، هیچ هدفی اختراع یا درونیابی نشود، و نشانی‌ها فقط در فهرست Sources بیایند.
+- **🛡 غیرکشنده و افت تدریجی:** سرویس جدید `js/services/forecast.js` مثل جستجو هیچ خطایی را به بقیهٔ داشبورد نمی‌رساند. اگر صفحهٔ TipRanks دیوار ضدربات برگرداند، همان صفحه با جستجوی Jina (`s.jina.ai`) یک بار دیگر خوانده می‌شود و نتیجه از تکه‌متن‌های (snippets) همان صفحه استخراج می‌گردد؛ مسیر موفق در فیلد `mode` ثبت می‌شود. صفحهٔ ارزهای دیجیتال اغلب قیمت هدف تحلیلگر ندارد؛ در این حالت کارت خالی می‌ماند و در پرامپت یک خط «Analyst forecast unavailable» می‌نشیند.
+- **💳 هزینهٔ توکن:** جستجو حالا ۵ پرس‌وجو برای سهام (≈۵۰٬۰۰۰ توکن) و ۴ پرس‌وجو برای کریپتو (≈۴۰٬۰۰۰ توکن) است. Reader برای هر دو صفحهٔ TTWO در اندازه‌گیری واقعی ۱۲٬۱۸۷ + ۳٬۶۱۲ ≈ ۱۵٬۸۰۰ توکن مصرف کرد؛ در مجموع هر تحلیل کامل با کلید Jina چیزی حدود ۵۵٬۰۰۰ تا ۶۶٬۰۰۰ توکن Jina هزینه دارد.
+- **📊 نسخهٔ ۵.۱ — نمودار فنی‌تر:** کارت «پیشبینی تحلیلگر» به‌جای دو نوار ساده یک گیج SVG دارد: بازهٔ ۵۲ هفته، ناحیهٔ شفافِ اهداف، سه میخِ کمترین/میانگین/بالاترین با برچسبِ عددی، لوزیِ قیمت فعلی و خط‌چینِ «تغییر تا میانگین» با پیل درصد؛ اجماع هم یک دونات است که کلمهٔ رتبه‌بندی و شمار تحلیلگران در مرکز آن نشسته و راهنمای شمارش+درصد جای چیپ‌های قبلی را گرفته، به‌همراه چهار کاشی آماری و کاشی تازهٔ «جایگاه در بازه ۵۲ هفته». همه با SVG خام و CSS (createElementNS، بدون کتابخانهٔ نمودار، بدون CDN) و **بدون هیچ درخواست شبکهٔ تازه**؛ دامنهٔ نمودار هر شش عدد را پوشش می‌دهد، پس قیمت فعلی دیگر به لبهٔ چپ نمی‌چسبد. متن پرامپت و `promptBuilder.js` دقیقاً دست‌نخورده‌اند.
+
+---
 ## 🆕 امکانات نسخه ۴ (جستجوی وب زنده):
 - **🔎 جستجوی وب زنده از منابع رسمی:** یک سرویس مستقل در `js/services/websearch.js` که هم‌زمان با بقیهٔ مرحله‌های تحلیل، سه پرس‌وجوی محدود به `site:` را به Jina (`s.jina.ai`) می‌فرستد و نتیجه فقط از سه منبع رسمی مالی است: Yahoo Finance (`finance.yahoo.com/quote`)، Barchart (`barchart.com/crypto/quotes`) و Perplexity Finance (`perplexity.ai/finance`). همیشه منطقهٔ ایالات متحده و زبان انگلیسی (`gl=US&hl=en`)، صرف‌نظر از زبان رابط کاربری.
 - **🧠 تحلیل «امروز» به‌جای تحلیل کلی:** نتیجهٔ جستجو در یک بلوک ساختاریافته به نام `LIVE WEB SEARCH RESULTS` به پرامپت هوش مصنوعی افزوده می‌شود و ۸ قانون اجباری استفاده از داده‌های وب را حمل می‌کند: ترکیب با داده‌های پنل و تاریخ‌زدن به امروز، گزارش هر دو قیمت در صورت اختلاف، اولویت داده‌های ۷۲ ساعت اخیر، استناد به منبع برای هر ادعای وب (مثلاً «per Barchart»)، و در پایان یک فهرست Sources که فقط نشانی‌های واقعاً استفاده‌شده را دارد.
 - **🃏 کارت جدید «جستجوی وب زنده»:** با نشان منبع، پیوند عنوان، خلاصه و تاریخ; دقیقاً مثل کارت اخبار با `textContent` و `safeHref` و DOMPurify در برابر XSS پاک‌سازی می‌شود. فهرست سفید URL در سرویس یک‌بار دیگر نتایج را پالایش می‌کند، بنابراین نشت موتور جستجو (مثلاً صفحهٔ یک نماد دیگر) هرگز به کارت یا پرامپت نمی‌رسد.
 - **🔑 فیلد اختیاری «کلید API جستجوی وب (Jina)»:** درست زیر فیلد کلید OpenRouter، با دکمهٔ نمایش/پنهان‌سازی; در `localStorage` با کلید `websearch_api_key` و کاملاً جدا از کلید OpenRouter ذخیره می‌شود. کلید را از [dashboard.jina.ai](https://dashboard.jina.ai) بگیرید.
 - **🛡 غیرکشنده به‌طور کامل:** بدون کلید، با کلید نامعتبر، یا در زمان محدودیت نرخ، هیچ درخواستی به سرویس جستجو فرستاده نمی‌شود (یا خطای مربوطه نمایش داده می‌شود) و بقیهٔ داشبورد عیناً مثل قبل کار می‌کند. جستجو هرگز درخواست‌های Binance/CoinGecko/CoinPaprika/OpenRouter را بلاک نمی‌کند و از هیچ پراکسی CORS عمومی استفاده نمی‌شود، چون کلید را فاش می‌کرد.
-- **💳 هزینهٔ تقریبی:** هر تحلیل سه پرس‌وجو ارسال می‌کند و هر پرس‌وجو به‌طور ثابت حدود ۱۰٬۰۰۰ توکن Jina مصرف می‌کند؛ در مجموع چیزی نزدیک ۳۰٬۰۰۰ توکن برای هر تحلیل. پلن رایگان Jina با ۱۰ میلیون توکن، بیش از ۳۰۰ تحلیل را پوشش می‌دهد.
+- **💳 هزینهٔ تقریبی:** هر تحلیل سه پرس‌وجو ارسال می‌کند و هر پرس‌وجو به‌طور ثابت حدود ۱۰٬۰۰۰ توکن Jina مصرف می‌کند؛ در مجموع چیزی نزدیک ۳۰٬۰۰۰ توکن برای هر تحلیل. پلن رایگان Jina با ۱۰ میلیون توکن، بیش از ۳۰۰ تحلیل را پوشش می‌دهد. *(از نسخهٔ ۵ این عدد به ۵ پرس‌وجو برای سهام و ۴ پرس‌وجو برای کریپتو رسید؛ عدد به‌روز را در بخش نسخهٔ ۵ ببینید.)*
 
 - **⌨️ پاسخ هوش مصنوعی به‌صورت زنده تایپ می‌شود:** گزارش با `stream: true` و SSE از OpenRouter دریافت می‌شود و هر بخش به‌محض رسیدن روی صفحه نمایش داده می‌شود (رندرهای میانی تا حد ۱۵۰ میلی‌ثانیه ادغام می‌شوند)؛ دیگر لازم نیست چند دقیقه به یک کارت خالی خیره شوید. اگر اتصال در میانهٔ راه قطع شود، همان متنی که نوشته شده حفظ می‌شود و یک یادداشت صادقانه («ارسال گزارش پیش از پایان قطع شد…») به آن افزوده می‌شود؛ دکمه‌های کپی/PDF تا پایان نوشتن غیرفعال‌اند.
 - **🔗 فهرست منابع به شکل چیپ نمایش داده می‌شود:** نشانی‌های انتهای گزارش هوش مصنوعی از متن بیرون کشیده، یک‌بار شسته و به صورت قرص‌های رنگی (با همان پالت نشان‌های کارت جستجو) در می‌آیند؛ مسیر بلند با بیضی بریده می‌شود و نشانی کامل در `title` می‌ماند. با `overflow-wrap: anywhere` دیگر هیچ نشانی انگلیسیِ بلند از کارت فارسی بیرون نمی‌زند و در موبایل سرریز ایجاد نمی‌شود.
@@ -83,7 +92,7 @@
 
 ---
 
-## Smart Cryptocurrency Analysis Panel with AI 🤖 (Version 4)
+## Smart Cryptocurrency Analysis Panel with AI 🤖 (Version 5)
 The Crypto Analysis Panel with AI is a completely free web interface that uses the latest Large Language Models (LLMs) behind the scenes to give you real-time, accurate analysis of the current state, potential and risks of the cryptocurrency market.
 Simply select the cryptocurrency you want and, in the shortest possible time, receive a full report on technical condition, market sentiment, short-term and long-term forecasts, support/resistance signals and trading suggestions from your chosen AI model.
 This panel is completely free and available via GitHub Pages; it does not require any manual deployment by the user.
@@ -98,13 +107,22 @@ This panel is completely free and available via GitHub Pages; it does not requir
 - **👽 Many LLMs:** Choose between different AI models such as DeepSeek, GPT-OSS, Grok, etc.
 
 ---
+## 🆕 What's new in Version 5 (analyst sources + "Analyst Forecast" card):
+- **➕ Two more official sources in the search pool:** beside Yahoo, Barchart and Perplexity, **TipRanks** (`tipranks.com/stocks/...` and `tipranks.com/cryptocurrency/...`) and **CNN Markets** (`cnn.com/markets/...`) are now allowlisted. A stock symbol (xStock included) fires 5 queries, a cryptocurrency 4, the item cap moved from 9 to 12, and both new hosts get their own badge and chip color. Anything off those paths (`tipranks.com/members/...`, `cnn.com/politics/...`) is rejected by the same URL allowlist.
+- **📈 New "Analyst Forecast" card:** placed exactly between "Advanced Network Metrics" and "Full AI Analysis". It reads **Highest / Average / Lowest price target** plus the **Buy / Hold / Sell** consensus straight from TipRanks and CNN Markets through the Jina Reader (`r.jina.ai`), and draws them with two minimal CSS scales — a target spread marked with low/average/high/current, and a stacked consensus bar. No chart library, no numbers that a source did not publish. When nothing usable comes back the card shows a single muted "no analyst forecast" line.
+- **🧠 The same numbers reach the prompt:** a separate `ANALYST FORECAST — TIPRANKS / CNN MARKETS` block (its own 1,200-character budget, independent of the web block) is injected right after the live search results and before the CRITICAL NOTE, carrying 4 mandatory usage rules: attribute every forecast figure to TipRanks or CNN Markets, state any conflict with the panel instead of silently picking a side, never invent or interpolate a target that is not in the block, and keep URLs out of the prose (Sources list only).
+- **🛡 Non-fatal, degrading field by field:** the new `js/services/forecast.js` never lets an error escape into the rest of the dashboard. If a TipRanks page answers with its anti-bot wall, the very same page is retried through Jina site-search (`s.jina.ai`) and the numbers are parsed out of the snippets — the winning path is recorded in `mode`. Crypto hub pages usually carry no analyst targets at all: then the card stays muted and the prompt falls back to one honest "Analyst forecast unavailable" line.
+- **💳 Token cost:** search is now 5 queries for stocks (≈50,000 Jina tokens) and 4 for crypto (≈40,000). The Reader measured 12,187 + 3,612 ≈ 15,800 tokens for the two TTWO pages, so a full analysis with a Jina key costs roughly 55,000–66,000 Jina tokens.
+- **📊 Version 5.1 — a more technical chart:** the "Analyst Forecast" card replaces the two plain bars with a hand-drawn SVG gauge — the 52-week band, a translucent target zone, three pins (lowest / average / highest) with value chips, the current price as a diamond and a dashed "upside to average" connector with a percentage pill — while the consensus becomes a donut with the rating word and analyst count in its hole and a count-and-percentage legend in place of the old chips, above four stat tiles plus a new "52-week position" tile. All of it is raw `createElementNS` SVG plus CSS: no chart library, no CDN, and **no new network call**. The gauge domain covers all six numbers, so the current price is no longer pinned to the left edge. `promptBuilder.js` and the prompt text are byte-for-byte untouched.
+
+---
 ## 🆕 What's new in Version 4 (live web search):
 - **🔎 Live web search from official sources only:** a fully independent service in `js/services/websearch.js` fires three `site:`-restricted queries at Jina (`s.jina.ai`) in parallel with the other pipeline steps. Results come only from Yahoo Finance (`finance.yahoo.com/quote`), Barchart (`barchart.com/crypto/quotes`) and Perplexity Finance (`perplexity.ai/finance`), always with US region and English (`gl=US&hl=en`) regardless of the UI language.
 - **🧠 A "today" analysis instead of a generic one:** the results are injected into the OpenRouter prompt as a structured `LIVE WEB SEARCH RESULTS` block that carries 8 mandatory WEB DATA USAGE RULES — merge the fresh findings with the panel's technical values and date the report to today, report both numbers when a live quote disagrees with the panel snapshot, prefer items from the last 72 hours, attribute every web-sourced claim to its source (e.g. "(per Barchart)"), and finish with a Sources list containing only the URLs actually used.
 - **🃏 New "Live Web Search" result card:** source badge, clickable title, snippet and optional date. It is sanitized exactly like the news card (`textContent` + `safeHref` + DOMPurify). A URL allowlist re-filters every item inside the service, so an engine leak (a page for a different symbol) never reaches the card or the prompt.
 - **🔑 Optional "Web Search API Key (Jina)" field:** placed right under the OpenRouter key, with the same show/hide eye toggle. It persists in `localStorage` under `websearch_api_key`, completely separate from `openrouter_api_key`. Get a free key at [dashboard.jina.ai](https://dashboard.jina.ai).
 - **🛡 Non-fatal by design:** with no key no request is sent at all; an invalid key or a rate limit only marks the search step as failed and toasts a localized notice, while every other card behaves exactly as before. The search never blocks the Binance/CoinGecko/CoinPaprika/OpenRouter requests and no public CORS proxy is ever used, because that would leak the key.
-- **💳 Approximate cost:** each analysis issues 3 queries and each query is billed a flat ~10,000 Jina tokens, so an analysis costs roughly 30,000 Jina tokens. The free 10M-token tier covers 300+ analyses.
+- **💳 Approximate cost:** each analysis issues 3 queries and each query is billed a flat ~10,000 Jina tokens, so an analysis costs roughly 30,000 Jina tokens. The free 10M-token tier covers 300+ analyses. *(From Version 5 this is 5 queries for stocks and 4 for crypto — see the Version 5 section for the current numbers.)*
 
 - **⌨️ The AI report types itself in live:** the report is fetched from OpenRouter with `stream: true` over SSE and each chunk is painted as it arrives (intermediate renders coalesce to ~150 ms), so you no longer stare at an empty card for minutes. If the stream stops halfway, the text that was already written is kept and an honest notice is appended ("The report stream stopped before it finished…"); the Copy/PDF buttons stay disabled while it writes.
 - **🔗 The Sources list became chips:** the URLs at the end of the AI report are extracted, cleaned and deduped, then rendered as colored pills reusing the search-card source palette; long paths truncate with an ellipsis and keep the full URL in `title`. Combined with `overflow-wrap: anywhere`, a long English URL can no longer escape a Persian card or overflow the page on mobile.
@@ -131,7 +149,7 @@ The panel talks only to free, key-less APIs, so some chain-level metrics genuine
 - **🤖 Prompt guardrail:** the analysis prompt explicitly lists the metrics that were not computed for the selected asset and instructs the model not to invent values, not to quote them from elsewhere, and not to read missing data as network weakness.
 
 ---
-## 🏗 Project structure (v4):
+## 🏗 Project structure (v5):
 ```
 index.html              semantic RTL/LTR shell: settings form, pipeline, results grid
 style.css               design-token system (CSS vars, data-theme), glass cards, components
@@ -146,7 +164,8 @@ js/
     market.js           price + klines: Binance (data-api.binance.vision) → CoinGecko → CoinPaprika
     ai.js               OpenRouter chat completions + error-code mapping + auto-continue on "length"
     blockchain.js       chain stats, network metrics (NVT/Mayer), news, Fear & Greed
-    websearch.js        Jina live search: 3 site-restricted queries, URL allowlist, never throws
+    websearch.js        Jina live search: 5 (stock) / 4 (crypto) site-restricted queries, URL allowlist, never throws
+    forecast.js         Jina Reader analyst forecast: TipRanks + CNN price targets, snippet fallback, never throws
   analysis/
     indicators.js       RSI, MACD, SMA/EMA, Bollinger, Stochastic, ADX, ATR, OBV, VWAP,
                         Ichimoku, Fibonacci, Volume Profile, support/resistance detection
