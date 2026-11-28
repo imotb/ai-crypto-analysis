@@ -28,6 +28,7 @@ export const TOKENIZED_STOCKS = {
   GOOGLX: 'GOOGL', NVDAX: 'NVDA', AAPLX: 'AAPL', TSLAX: 'TSLA', CRCLX: 'CRCL',
   MSTRX: 'MSTR',  SPYX: 'SPY',  METAX: 'META', CSCOX: 'CSCO', AVGOX: 'AVGO',
   CRWDX: 'CRWD',  AMZNX: 'AMZN', TTWO: 'TTWO',
+  MSFTX: 'MSFT',  IBMX: 'IBM',  SPCXB: 'SPCX', ANTX: 'ANT',
 };
 
 /* Per-source symbol formats are verified against the live URLs: Yahoo pages are

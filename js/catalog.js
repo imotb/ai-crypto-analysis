@@ -85,7 +85,6 @@ export const CRYPTOS = [
   { c: 'dogs', t: 'DOGS', i: 'dogs', en: 'Dogs', fa: 'داگز', cg: 'dogs-2', cp: 'dogs-dogs', tv: 'BINANCE:DOGSUSDT' },
   { c: 'hyperliquid', t: 'HYPE', i: 'hyperliquid', en: 'Hyperliquid', fa: 'هایپر لیکویید', cg: 'hyperliquid', cp: 'hype-hyperliquid', tv: 'KUCOIN:HYPEUSDT' },
   { c: 'electroneum', t: 'ETN', i: 'electroneum', en: 'Electroneum', fa: 'الکترونیوم', cg: 'electroneum', cp: 'etn-electroneum', tv: 'KUCOIN:ETNUSDT' },
-  { c: 'tether-gold', t: 'XAUT', i: 'tether-gold', en: 'Tether Gold', fa: 'تتر گلد', cg: 'tether-gold', cp: 'xaut-tether-gold', tv: 'BINANCE:XAUTUSDT' },
   { c: 'wanchain', t: 'WAN', i: 'wanchain', en: 'Wanchain', fa: 'ون چین', cg: 'wanchain', cp: 'wan-wanchain', tv: 'KUCOIN:WANUSDT' },
   { c: 'pump-fun', t: 'PUMP', i: 'pump-fun', en: 'Pump.fun', fa: 'پامپ فان', cg: 'pump-fun', cp: 'pump-pumpfun', tv: 'BYBIT:PUMPUSDT' },
   { c: 'kusama', t: 'KSM', i: 'kusama', en: 'Kusama', fa: 'کوزاما', cg: 'kusama', cp: 'ksm-kusama', tv: 'OKX:KSMUSDT' },
@@ -167,6 +166,15 @@ export const CRYPTOS = [
      has no tokenized TTWO at all, and no crypto venue lists a TTWO pair on
      TradingView, so the chart falls back to the NASDAQ underlying. */
   { c: 'take-two-interactive-software-backpack-securities', t: 'TTWO', i: 'TTWO', en: 'Take-Two Interactive (Tokenized)', fa: 'تیک-تو اینتراکتیو استاک', cg: 'take-two-interactive-software-backpack-securities', cp: null, tv: 'NASDAQ:TTWO' },
+  /* Added in V5.3 — ids verified against CoinGecko/CoinPaprika/TradingView on 2026-11-26.
+     ANTX has young history (~9d token age, full equity forecast via ANT).
+     KAG is not listed on TradingView, so its chart falls back to silver spot (OANDA:XAGUSD). */
+  { c: 'tether-gold', t: 'XAUT', i: 'tether-gold', en: 'Tether Gold', fa: 'طلا (تتر گلد)', cg: 'tether-gold', cp: 'xaut-tether-gold', tv: 'BINANCE:XAUTUSDT' },
+  { c: 'kinesis-silver', t: 'KAG', i: 'kinesis-silver', en: 'Kinesis Silver', fa: 'نقره (کینسیس سیلور)', cg: 'kinesis-silver', cp: 'kag-kinesis-silver', tv: 'OANDA:XAGUSD' },
+  { c: 'microsoft-xstock', t: 'MSFTX', i: 'microsoft-xstock', en: 'Microsoft xStock', fa: 'مایکروسافت استاک', cg: 'microsoft-xstock', cp: 'msftx-microsoft-tokenized-stock-xstock', tv: 'KRAKEN:MSFTXUSD' },
+  { c: 'anthropic-xstock', t: 'ANTX', i: 'anthropic-xstock', en: 'Anthropic xStock', fa: 'آنتروپیک استاک', cg: 'anthropic-xstock', cp: null, tv: 'KUCOIN:ANTXUSDT' },
+  { c: 'international-business-machines-xstock', t: 'IBMX', i: 'international-business-machines-xstock', en: 'IBM xStock', fa: 'آیبیام استاک', cg: 'international-business-machines-xstock', cp: 'ibmx-international-business-machines-tokenized-stock-xstock', tv: 'KRAKEN:IBMXUSD' },
+  { c: 'spacex-bstocks-tokenized-stock', t: 'SPCXB', i: 'spacex-bstocks-tokenized-stock', en: 'SpaceX (bStocks Tokenized)', fa: 'اسپیسایکس استاک', cg: 'spacex-bstocks-tokenized-stock', cp: 'spcxb-spacex-tokenized-bstocks', tv: 'BINANCE:SPCXBUSDT' },
 ];
 
 export function cryptoInfo(slug, language) {
